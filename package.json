@@ -1,0 +1,14 @@
+{
+  "name": "@d3/brushable-parallel-coordinates",
+  "main": "c8f3c13694a25451@326.js",
+  "version": "326.0.0",
+  "homepage": "https://observablehq.com/@d3/brushable-parallel-coordinates",
+  "author": {
+    "name": "D3",
+    "url": "https://observablehq.com/@d3"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}
