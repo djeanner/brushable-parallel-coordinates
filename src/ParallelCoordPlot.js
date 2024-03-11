@@ -1,10 +1,41 @@
 class ParallelCoordPlot {
-    constructor(csvFilePath, containerSelector) {
-        d3.csv(csvFilePath).then((data) => this.init(data, containerSelector));
+   constructor(csvFilePath, containerSelector) {
+        this.containerSelector = containerSelector;
+        d3.csv(csvFilePath).then((data) => {
+            this.data = data;
+            this.keys = Object.keys(data[0]).filter(d => d !== "name"); // Adjust as necessary
+            this.createDropdown(); // Invoke dropdown creation
+            this.setColorAxis(this.keys[0]); // Set initial color axis and draw the plot
+        });
     }
- init(data, containerSelector) {
-        // Ensure we select the specified container for this plot
-       
+ createDropdown() {
+        const plot = this;
+        const dropdown = d3.select(this.containerSelector)
+            .insert("select", ":first-child") // Insert the select element as the first child of the container
+            .attr("class", "color-axis-selector")
+            .on("change", function() {
+                const selectedAxis = d3.select(this).property("value");
+                plot.setColorAxis(selectedAxis);
+            });
+
+        dropdown.selectAll("option")
+            .data(this.keys)
+            .enter()
+            .append("option")
+            .text(d => d)
+            .attr("value", d => d);
+    }
+    setColorAxis(newAxis) {
+        this.colorAxis = newAxis; // Update the axis used for coloring
+        this.init(); // Reinitialize the plot
+    }
+
+
+ init() {
+	  const data = this.data;
+    const containerSelector = this.containerSelector;
+    // Ensure we clear any existing SVG before creating a new one
+    d3.select(containerSelector).select("svg").remove();
 
 		// Preliminary setup based on the data
 		const keys = Object.keys(data[0]).filter(
