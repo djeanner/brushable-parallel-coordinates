@@ -21,9 +21,9 @@ class ParallelCoordPlot {
 		const width = 928;
 		const height = keys.length * 120 + 20; // Height adjusted for margin
 		const marginTop = 20;
-		const marginRight = 10;
+		const marginRight = 50;
 		const marginBottom = 20;
-		const marginLeft = 10;
+		const marginLeft = 110;
 
 		const x = new Map(
 			keys.map((key) => [
@@ -68,7 +68,11 @@ class ParallelCoordPlot {
 			.line()
 			.defined(([, value]) => value != null)
 			.x(([key, value]) => x.get(key)(value))
-			.y(([key]) => y(key));
+			.y(([key]) => y(key))
+			.curve(d3.curveCatmullRom.alpha(0.0)); // Adjust alpha for different smoothing
+
+
+
 
 		// Draw lines
 		// Apply mouse events for the paths, ensuring tooltip functionality
@@ -99,6 +103,9 @@ class ParallelCoordPlot {
 				tooltip.transition().duration(500).style("opacity", 0);
 			});
 
+
+
+
 		const selections = new Map();
 
 		// Updates the opacity of each path based on whether it falls within the selections on all brushed axes
@@ -122,6 +129,14 @@ class ParallelCoordPlot {
 				.attr("transform", `translate(0,${y(key)})`);
 
 			axis.call(d3.axisBottom(x.get(key))); // Draw the axis
+
+ // Append labels at the top of each axis
+            axis.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "translate(" + (marginLeft) + ", -10)") // Position at the top, adjust as needed
+                .attr("text-anchor", "end")
+                .attr("fill", "currentColor") // Adjust text color as needed
+                .text(key);
 
 			// Append the brush for each axis
 			axis
