@@ -1,9 +1,10 @@
 class ParallelCoordPlot {
 	constructor(csvFilePath, containerSelector) {
     this.containerSelector = containerSelector;
+    this.brushes = new Map(); // Initialize the brushes map here
     d3.csv(csvFilePath, d3.autoType).then(data => {
       this.data = data;
-      this.keys = Object.keys(data[0]).filter(d => d !== "name" );
+      this.keys = Object.keys(this.data[0]).filter(d => d !== "name" ); // filtering out columns
       // Set up dimensions here or in init method
       this.margin = { top: 30, right: 10, bottom: 10, left: 0 };
       this.width = 960 - this.margin.left - this.margin.right;
@@ -134,11 +135,12 @@ setupAxes(svg) {
       .call(brush);
   });
 }
-
 brushed(event, key) {
   if (event.selection) {
-    // Store brush extents in a way that they can be used to filter data
-    this.brushes.set(key, event.selection);
+    // Convert pixel selection to data values if necessary
+    const selection = event.selection.map(this.y[key].invert, this.y[key]);
+    this.brushes.set(key, selection);
+    console.log(`Brushed on ${key}: `, selection);
   } else {
     this.brushes.delete(key);
   }
@@ -146,13 +148,28 @@ brushed(event, key) {
 }
 
 updateLines() {
+
   const svg = d3.select(this.containerSelector).select("svg");
   svg.selectAll("path")
     .style("opacity", d => {
-      return Array.from(this.brushes).every(([key, [min, max]]) => {
-        const value = d[key];
-        return value >= min && value <= max;
-      }) ? 0.8 : 0.1; // Highlight or dim based on brush selections
+      // Assuming d is correctly populated for each path
+      if (!d) {
+        return 0.1; // Fallback opacity for missing data
+      } 
+
+      // Check if the line is within all brushes' extents
+      let isVisible = Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
+        const val = d[key];
+                      console.log("key val " + min + " " + max + " "+ key + " " + val);
+    if (min > max)
+        return val >= max && val <= min;
+      else
+        return val >= min && val <= max;
+      });
+
+      return isVisible ? 0.8 : 0.03;
     });
 }
+
+
 }
