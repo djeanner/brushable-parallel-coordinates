@@ -1,9 +1,11 @@
 class ParallelCoordPlot {
-	constructor(csvFilePath) {
-		d3.csv(csvFilePath).then((data) => this.init(data));
-	}
+    constructor(csvFilePath, containerSelector) {
+        d3.csv(csvFilePath).then((data) => this.init(data, containerSelector));
+    }
+ init(data, containerSelector) {
+        // Ensure we select the specified container for this plot
+       
 
-	init(data) {
 		// Preliminary setup based on the data
 		const keys = Object.keys(data[0]).filter(
 			(d) => d !== "name" && d !== "year"
@@ -44,15 +46,13 @@ class ParallelCoordPlot {
 		);
 
 		// Initialize SVG container
-
-		const svg = d3
-			.select("body")
-			.append("svg")
-			.attr("viewBox", [0, 0, width, height])
-			.attr("width", width)
-			.attr("height", height)
-			.style("max-width", "100%")
-			.style("height", "auto");
+ const svg = d3.select(containerSelector).append("svg")
+            .attr("viewBox", [0, 0, width, height])
+            .attr("width", width)
+            .attr("height", height)
+            .style("max-width", "100%")
+            .style("height", "auto");
+		
 		const tooltip = d3
 			.select("body")
 			.append("div")

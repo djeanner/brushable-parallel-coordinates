@@ -9,13 +9,19 @@
             font: 10px sans-serif;
         }
         /* Additional styling */
+        .plot-container {
+            width: 100%;
+            min-height: 400px; /* Adjust based on your needs */
+        }
     </style>
 </head>
 <body>
+    <div id="plot1" class="plot-container"></div>
+
     <script src="src/ParallelCoordPlot.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const plot = new ParallelCoordPlot("./files/data.csv");
+            const plot1 = new ParallelCoordPlot("./files/data.csv", "#plot1");
         });
     </script>
 </body>
