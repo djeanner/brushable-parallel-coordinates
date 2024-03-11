@@ -29,13 +29,13 @@ class ParallelCoordPlot {
       .text(d => d)
       .attr("value", d => d);
   }
+
 setColorAxis(newAxis) {
     this.colorAxis = newAxis;
     const colorExtent = d3.extent(this.data, d => +d[newAxis]);
     this.color = d3.scaleSequential([colorExtent[0], colorExtent[1]], d3.interpolateInferno);
     this.init();
   }
-
 
   init() {
     // Clear any existing content
@@ -169,5 +169,12 @@ updateLines() {
     });
 }
 
+updateLineColors() {
+    const svg = d3.select(this.containerSelector).select("svg");
+    svg.selectAll("path")
+        .transition() // Optional: add a transition for smoother color change
+        .duration(500)
+        .attr("stroke", d => this.color(d[this.colorAxis]));
+}
 
 }
