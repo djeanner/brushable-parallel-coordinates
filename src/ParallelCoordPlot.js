@@ -140,7 +140,6 @@ brushed(event, key) {
     // Convert pixel selection to data values if necessary
     const selection = event.selection.map(this.y[key].invert, this.y[key]);
     this.brushes.set(key, selection);
-    console.log(`Brushed on ${key}: `, selection);
   } else {
     this.brushes.delete(key);
   }
@@ -160,7 +159,6 @@ updateLines() {
       // Check if the line is within all brushes' extents
       let isVisible = Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
         const val = d[key];
-                      console.log("key val " + min + " " + max + " "+ key + " " + val);
     if (min > max)
         return val >= max && val <= min;
       else
