@@ -1,41 +1,55 @@
 class ParallelCoordPlot {
-   constructor(csvFilePath, containerSelector) {
-        this.containerSelector = containerSelector;
-        d3.csv(csvFilePath).then((data) => {
-            this.data = data;
-            this.keys = Object.keys(data[0]).filter(d => d !== "name"); // Adjust as necessary
-            this.createDropdown(); // Invoke dropdown creation
-            this.setColorAxis(this.keys[0]); // Set initial color axis and draw the plot
-        });
-    }
- createDropdown() {
-        const plot = this;
-        const dropdown = d3.select(this.containerSelector)
-            .insert("select", ":first-child") // Insert the select element as the first child of the container
-            .attr("class", "color-axis-selector")
-            .on("change", function() {
-                const selectedAxis = d3.select(this).property("value");
-                plot.setColorAxis(selectedAxis);
-            });
+	constructor(csvFilePath, containerSelector) {
+		this.containerSelector = containerSelector;
+		d3.csv(csvFilePath).then((data) => {
+			this.data = data;
+			// Filter keys to exclude non-numeric and specific fields you don't want to visualize
+			this.keys = Object.keys(data[0]).filter((d) => d !== "name");
+			this.createDropdown();
+			this.setColorAxis(this.keys[0]); // Initialize with the first key as the color axis
+		});
+	}
 
-        dropdown.selectAll("option")
-            .data(this.keys)
-            .enter()
-            .append("option")
-            .text(d => d)
-            .attr("value", d => d);
-    }
-    setColorAxis(newAxis) {
-        this.colorAxis = newAxis; // Update the axis used for coloring
-        this.init(); // Reinitialize the plot
-    }
+	createDropdown() {
+		const plot = this;
+		const dropdown = d3
+			.select(this.containerSelector)
+			.insert("select", ":first-child")
+			.attr("class", "color-axis-selector")
+			.on("change", function () {
+				plot.setColorAxis(this.value);
+			});
 
+		dropdown
+			.selectAll("option")
+			.data(this.keys)
+			.enter()
+			.append("option")
+			.text((d) => d)
+			.attr("value", (d) => d);
+	}
+	setColorAxis(newAxis) {
+		this.colorAxis = newAxis;
+		const colorExtent = d3.extent(this.data, (d) => +d[newAxis]);
+		this.color = d3.scaleSequential(d3.interpolateBrBG).domain(colorExtent);
+		this.init(); // Redraw the plot with the new color axis
+	}
 
- init() {
-	  const data = this.data;
-    const containerSelector = this.containerSelector;
-    // Ensure we clear any existing SVG before creating a new one
-    d3.select(containerSelector).select("svg").remove();
+	
+
+	init() {
+		const container = d3.select(this.containerSelector);
+		container.select("svg").remove(); // Clear previous SVG
+		this.svg = container
+			.append("svg")
+			.attr("viewBox", [0, 0, 928, this.keys.length * 120 + 20])
+			.style("max-width", "100%")
+			.style("height", "auto");
+
+		const data = this.data;
+		const containerSelector = this.containerSelector;
+		// Ensure we clear any existing SVG before creating a new one
+		d3.select(containerSelector).select("svg").remove();
 
 		// Preliminary setup based on the data
 		const keys = Object.keys(data[0]).filter(
@@ -50,40 +64,16 @@ class ParallelCoordPlot {
 			});
 		});
 
-		// Setup dimensions and scales
-		const width = 928;
-		const height = keys.length * 120 + 20; // Height adjusted for margin
-		const marginTop = 20;
-		const marginRight = 50;
-		const marginBottom = 20;
-		const marginLeft = 110;
-
-		const x = new Map(
-			keys.map((key) => [
-				key,
-				d3.scaleLinear(
-					d3.extent(data, (d) => d[key]),
-					[marginLeft, width - marginRight]
-				),
-			])
-		);
-		const y = d3
-			.scalePoint()
-			.domain(keys)
-			.range([marginTop, height - marginBottom]);
-		const color = d3.scaleSequential(
-			d3.extent(data, (d) => d[keyz]),
-			d3.interpolateBrBG
-		);
-
 		// Initialize SVG container
- const svg = d3.select(containerSelector).append("svg")
-            .attr("viewBox", [0, 0, width, height])
-            .attr("width", width)
-            .attr("height", height)
-            .style("max-width", "100%")
-            .style("height", "auto");
-		
+		const svg = d3
+			.select(containerSelector)
+			.append("svg")
+			.attr("viewBox", [0, 0, width, height])
+			.attr("width", width)
+			.attr("height", height)
+			.style("max-width", "100%")
+			.style("height", "auto");
+
 		const tooltip = d3
 			.select("body")
 			.append("div")
@@ -102,40 +92,8 @@ class ParallelCoordPlot {
 			.y(([key]) => y(key))
 			.curve(d3.curveCatmullRom.alpha(0.0)); // Adjust alpha for different smoothing
 
-
-
-
 		// Draw lines
 		// Apply mouse events for the paths, ensuring tooltip functionality
-		svg
-			.append("g")
-			.selectAll("path")
-			.data(data)
-			.enter()
-			.append("path")
-			.attr("d", (d) => line(d3.cross(keys, [d], (key, d) => [key, d[key]])))
-			.attr("stroke", (d) => color(d[keyz]))
-			.attr("fill", "none")
-			.attr("stroke-width", 1.5)
-			.attr("stroke-opacity", 0.4)
-			.on("mouseover", function (event, d) {
-				d3.select(this).attr("stroke-width", 3);
-				tooltip.transition().duration(200).style("opacity", 0.9);
-				tooltip
-					.html(
-						`Year: ${d.year}<br/>` +
-							keys.map((key) => `${key}: ${d[key]}`).join("<br/>")
-					)
-					.style("left", event.pageX + "px")
-					.style("top", event.pageY - 28 + "px");
-			})
-			.on("mouseout", function () {
-				d3.select(this).attr("stroke-width", 1.5);
-				tooltip.transition().duration(500).style("opacity", 0);
-			});
-
-
-
 
 		const selections = new Map();
 
@@ -153,36 +111,7 @@ class ParallelCoordPlot {
 				return 1; // Data point falls within all brush regions
 			});
 		};
-		keys.forEach((key) => {
-			const axis = svg
-				.append("g")
-				.attr("class", "axis")
-				.attr("transform", `translate(0,${y(key)})`);
 
-			axis.call(d3.axisBottom(x.get(key))); // Draw the axis
-
- // Append labels at the top of each axis
-            axis.append("text")
-                .attr("class", "axis-label")
-                .attr("transform", "translate(" + (marginLeft) + ", -10)") // Position at the top, adjust as needed
-                .attr("text-anchor", "end")
-                .attr("fill", "currentColor") // Adjust text color as needed
-                .text(key);
-
-			// Append the brush for each axis
-			axis
-				.append("g")
-				.attr("class", "brush")
-				.call(
-					d3
-						.brushX()
-						.extent([
-							[marginLeft, -8],
-							[width - marginRight, 8],
-						])
-						.on("start brush end", (event) => brushed(event, key))
-				);
-		});
 		// Draw axes and add brush to each
 		svg
 			.selectAll(".axis")
@@ -222,8 +151,85 @@ class ParallelCoordPlot {
 		};
 
 		//
+		this.drawLines(); // Ensure this method draws lines based on the current state
+	}
+
+	drawLines(svg) {
+		const lineGenerator = d3
+			.line()
+			.defined(([, value]) => value != null)
+			.x(([key, value]) => this.x.get(key)(value))
+			.y(([key]) => this.y(key))
+			.curve(d3.curveCatmullRom.alpha(0.5)); // Adjust for smoothing
+
+		svg
+			.selectAll("path")
+			.data(this.data)
+			.join("path")
+			.attr("d", (d) =>
+				lineGenerator(d3.cross(this.keys, [d], (key, d) => [key, d[key]]))
+			)
+			.attr("stroke", (d) => this.color(+d[this.colorAxis]))
+			.attr("fill", "none")
+			.attr("stroke-width", 1.5)
+			.attr("stroke-opacity", 0.7);
+	}
+
+	setupAxes(svg) {
+		const width = 928;
+		const height = this.keys.length * 120 + 20; // Height adjusted for margin
+		const marginTop = 20;
+		const marginRight = 50;
+		const marginBottom = 20;
+		const marginLeft = 110;
+
+		// Setup the x scale for each axis
+		this.x = new Map(
+			this.keys.map((key) => [
+				key,
+				d3
+					.scaleLinear()
+					.domain(d3.extent(this.data, (d) => +d[key]))
+					.range([marginLeft, width - marginRight]),
+			])
+		);
+
+		// Setup the y scale for placing each axis
+		this.y = d3
+			.scalePoint()
+			.domain(this.keys)
+			.range([marginTop, height - marginBottom]);
+
+		// Draw each axis and its brush
+		this.keys.forEach((key, index) => {
+			const axis = svg
+				.append("g")
+				.attr("transform", `translate(0,${this.y(key)})`)
+				.attr("class", "axis");
+
+			// Draw the axis
+			axis.call(d3.axisBottom(this.x.get(key)));
+
+			// Add axis label
+			axis
+				.append("text")
+				.attr("class", "axis-label")
+				.attr("transform", `translate(${width - marginRight}, 0)`)
+				.attr("fill", "currentColor")
+				.attr("text-anchor", "end")
+				.attr("dy", "-0.5em")
+				.text(key);
+
+			// Setup brush for this axis (if needed)
+			const brush = d3
+				.brushX()
+				.extent([
+					[marginLeft, -8],
+					[width - marginRight, 8],
+				])
+				.on("start brush end", (event) => this.brushed(event, key));
+
+			axis.append("g").attr("class", "brush").call(brush);
+		});
 	}
 }
-
-// Usage example:
-// new ParallelCoordPlot("path/to/your/data.csv");
