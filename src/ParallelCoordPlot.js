@@ -3,7 +3,7 @@ class ParallelCoordPlot {
     this.containerSelector = containerSelector;
     d3.csv(csvFilePath, d3.autoType).then(data => {
       this.data = data;
-      this.keys = Object.keys(data[0]).filter(d => d !== "name" && d !== "year");
+      this.keys = Object.keys(data[0]).filter(d => d !== "name" );
       // Set up dimensions here or in init method
       this.margin = { top: 30, right: 10, bottom: 10, left: 0 };
       this.width = 960 - this.margin.left - this.margin.right;
@@ -56,23 +56,57 @@ setColorAxis(newAxis) {
         .range([this.height, 0]);
     });
 
+ // Tooltip setup
+  this.tooltip = d3.select(this.containerSelector)
+    .append("div")
+    .style("position", "absolute")
+    .style("visibility", "hidden")
+    .style("background-color", "white")
+    .style("border", "solid")
+    .style("border-width", "1px")
+    .style("border-radius", "5px")
+    .style("padding", "10px");
+
+
     this.drawLines(svg);
     this.setupAxes(svg);
   }
+  
+drawLines(svg) {
+  const plot = this;
+  svg.selectAll("myPath")
+    .data(this.data)
+    .enter().append("path")
+    .attr("d", function(d) {
+      return d3.line()(plot.keys.map(function(p) { return [plot.x(p), plot.y[p](d[p])]; }));
+    })
+    .attr("stroke", d => plot.color(d[plot.colorAxis]))
+    .style("fill", "none")
+    .style("stroke-width", "1.5px")
+    .style("opacity", "0.8")
+    // Mouseover event to show tooltip
+    .on("mouseover", function(event, d) {
+      plot.tooltip.style("visibility", "visible")
+        .html(() => {
+          // Adding name and year to the tooltip content
+          let content = `<strong>Name:</strong> ${d.name}<br><strong>Year:</strong> ${d.year}<br><br><strong>Values:</strong><br>`;
+          plot.keys.forEach(key => {
+            content += `${key}: ${d[key]}<br>`;
+          });
+          return content;
+        });
+    })
+    // Mousemove event to position the tooltip
+    .on("mousemove", function(event) {
+      plot.tooltip.style("top", (event.pageY - 10) + "px")
+        .style("left", (event.pageX + 10) + "px");
+    })
+    // Mouseout event to hide the tooltip
+    .on("mouseout", function() {
+      plot.tooltip.style("visibility", "hidden");
+    });
+}
 
-  drawLines(svg) {
-    const plot = this;
-    svg.selectAll("myPath")
-      .data(this.data)
-      .enter().append("path")
-      .attr("d", function(d) {
-        return d3.line()(plot.keys.map(function(p) { return [plot.x(p), plot.y[p](d[p])]; }));
-      })
-      .attr("stroke", d => this.color(d[this.colorAxis]))
-      .style("fill", "none")
-      .style("stroke-width", 1.5)
-      .style("opacity", 0.8);
-  }
 
 setupAxes(svg) {
   const plot = this;
