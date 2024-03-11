@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>D3 Plot from CSV</title>
+    <title>D3 Parallel Coordinates Plot</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <style>
         body {
             font: 10px sans-serif;
         }
-        /* Add any additional styling for your plot here */
+        /* Additional styling */
     </style>
 </head>
 <body>
-    <!-- Reference your external JavaScript file here -->
-    <script src="src/parallelCoord.js"></script>
+    <script src="src/ParallelCoordPlot.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const plot = new ParallelCoordPlot("./files/data.csv");
+        });
+    </script>
 </body>
 </html>
