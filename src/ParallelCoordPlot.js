@@ -1,6 +1,5 @@
 class ParallelCoordPlot {
 	constructor(csvFilePath, containerSelector) {
-    
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
 		d3.csv(csvFilePath, d3.autoType).then((data) => {
@@ -17,36 +16,29 @@ class ParallelCoordPlot {
 	}
 
 	createDropdown() {
+		const plot = this;
 
+		// Append a label before the dropdown
+		d3.select(this.containerSelector)
+			.append("label")
+			.attr("class", "color-axis-selector-label") // Optional: for styling the label
+			.text("Select colors according to "); // The text content for the label
 
-	const plot = this;
-    
-    // Append a label before the dropdown
-    d3.select(this.containerSelector)
-      .append("label")
-      .attr("class", "color-axis-selector-label") // Optional: for styling the label
-      .text("Select colors according to "); // The text content for the label
-
-    // Continue with the dropdown creation as before
-    const dropdown = d3
-        .select(this.containerSelector)
-        .append("select")
-        .attr("class", "color-axis-selector")
-        .on("change", function () {
-            plot.setColorAxis(this.value);
-        });
-
-    dropdown
-        .selectAll("option")
-        .data(this.keys)
-        .enter()
-        .append("option")
-        .text((d) => d)
-        .attr("value", (d) => d);
-
-
-
-
+		// Continue with the dropdown creation as before
+		const dropdown = d3
+			.select(this.containerSelector)
+			.append("select")
+			.attr("class", "color-axis-selector")
+			.on("change", function () {
+				plot.setColorAxis(this.value);
+			});
+		dropdown
+			.selectAll("option")
+			.data(this.keys)
+			.enter()
+			.append("option")
+			.text((d) => d)
+			.attr("value", (d) => d);
 	}
 
 	setColorAxis(newAxis) {
@@ -105,7 +97,7 @@ class ParallelCoordPlot {
 		// Define the line generator with spline interpolation
 		const line = d3
 			.line()
-			.defined((d) => !isNaN(d[1])) // Ensure that the data point is defined
+			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
 			.x((d) => plot.x(d[0])) // Use the x scale to find the position
 			.y((d) => plot.y[d[0]](d[1])) // Use the y scale relevant to the key to find the position
 			.curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
