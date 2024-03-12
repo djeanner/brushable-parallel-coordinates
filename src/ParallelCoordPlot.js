@@ -17,22 +17,36 @@ class ParallelCoordPlot {
 	}
 
 	createDropdown() {
-		const plot = this;
-		const dropdown = d3
-			.select(this.containerSelector)
-			.append("select")
-			.attr("class", "color-axis-selector")
-			.on("change", function () {
-				plot.setColorAxis(this.value);
-			});
 
-		dropdown
-			.selectAll("option")
-			.data(this.keys)
-			.enter()
-			.append("option")
-			.text((d) => d)
-			.attr("value", (d) => d);
+
+	const plot = this;
+    
+    // Append a label before the dropdown
+    d3.select(this.containerSelector)
+      .append("label")
+      .attr("class", "color-axis-selector-label") // Optional: for styling the label
+      .text("Select colors according to "); // The text content for the label
+
+    // Continue with the dropdown creation as before
+    const dropdown = d3
+        .select(this.containerSelector)
+        .append("select")
+        .attr("class", "color-axis-selector")
+        .on("change", function () {
+            plot.setColorAxis(this.value);
+        });
+
+    dropdown
+        .selectAll("option")
+        .data(this.keys)
+        .enter()
+        .append("option")
+        .text((d) => d)
+        .attr("value", (d) => d);
+
+
+
+
 	}
 
 	setColorAxis(newAxis) {
