@@ -1,20 +1,36 @@
 class ParallelCoordPlot {
 	constructor(csvFilePath, containerSelector) {
-    
-		this.containerSelector = containerSelector;
-		this.brushes = new Map(); // Initialize the brushes map here
-		d3.csv(csvFilePath, d3.autoType).then((data) => {
-			this.data = data;
-			this.keys = Object.keys(this.data[0]).filter((d) => d !== "name"); // filtering out columns
-			// Set up dimensions here or in init method
-			this.margin = { top: 30, right: 10, bottom: 10, left: 0 };
-			this.width = 960 - this.margin.left - this.margin.right;
-			this.height = 500 - this.margin.top - this.margin.bottom;
-			this.createDropdown();
-			this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
-			this.init();
-		});
-	}
+    this.containerSelector = containerSelector;
+    this.brushes = new Map(); // Initialize the brushes map here
+    d3.csv(csvFilePath, d3.autoType).then((data) => {
+        this.data = data;
+        // Dynamically determine if each key is numerical or categorical
+        this.keys = Object.keys(data[0]);
+        this.keyTypes = {}; // Object to store the type of each key
+        this.keys.forEach(key => {
+            // Assume the key is numerical initially
+            let isNumerical = true;
+            for (let i = 0; i < data.length; i++) {
+                // Check if value is not null and is not a number
+                if (data[i][key] !== null && isNaN(Number(data[i][key]))) {
+                    isNumerical = false;
+                    break;
+                }
+            }
+            this.keyTypes[key] = isNumerical ? 'numerical' : 'categorical';
+        });
+        this.margin = { top: 30, right: 10, bottom: 10, left: 0 };
+        this.width = 960 - this.margin.left - this.margin.right;
+        this.height = 500 - this.margin.top - this.margin.bottom;
+        this.createDropdown();
+        this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+        this.init();
+    });
+}
+
+
+  
+
 
 	createDropdown() {
 		const plot = this;
@@ -63,13 +79,20 @@ class ParallelCoordPlot {
 			.padding(1)
 			.domain(this.keys);
 		this.y = {};
-		this.keys.forEach((key) => {
-			this.y[key] = d3
-				.scaleLinear()
-				.domain(d3.extent(this.data, (d) => +d[key]))
-				.range([this.height, 0]);
-		});
 
+		this.keys.forEach((key) => {
+        if (this.keyTypes[key] === 'categorical') {
+            const categories = Array.from(new Set(this.data.map(d => d[key])));
+            this.y[key] = d3.scaleBand()
+                            .domain(categories)
+                            .range([this.height, 0])
+                            .paddingInner(0.1);
+        } else { // Numerical
+            this.y[key] = d3.scaleLinear()
+                            .domain(d3.extent(this.data, d => +d[key]))
+                            .range([this.height, 0]);
+        }
+    });
 		// Tooltip setup
 		this.tooltip = d3
 			.select(this.containerSelector)
@@ -87,31 +110,34 @@ class ParallelCoordPlot {
 	}
 
 	drawLines(svg) {
-		const plot = this;
-		// Define the line generator with spline interpolation
-		const line = d3
-			.line()
-			.defined((d) => !isNaN(d[1])) // Ensure that the data point is defined
-			.x((d) => plot.x(d[0])) // Use the x scale to find the position
-			.y((d) => plot.y[d[0]](d[1])) // Use the y scale relevant to the key to find the position
-			.curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
-		// Draw lines
-		svg
-			.selectAll("path")
-			.data(this.data)
-			.enter()
-			.append("path")
-			.attr("d", function (d) {
-				return line(
-					plot.keys.map(function (key) {
-						return [key, d[key]];
-					})
-				);
-			})
-			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
-			.style("fill", "none")
-			.style("stroke-width", "1.5px")
-			.style("opacity", "0.8")
+    const plot = this;
+    const line = d3.line()
+        .defined(([key, value]) => !isNaN(value)) // Check if the value is a number
+        .x(([key, value]) => plot.x(key)) // Use key to determine x position
+        .y(([key, value]) => {
+            // Ensure value is numeric before mapping to y position
+            const numericValue = parseFloat(value);
+            return !isNaN(numericValue) ? plot.y[key](numericValue) : null;
+        })
+        .curve(d3.curveCatmullRom.alpha(1)); // Smooth curve
+
+    // Example: Log the SVG path string for the first data point
+    const firstDataPoint = this.data[0];
+    const firstDataPointKeyValues = this.keys.map(key => [key, firstDataPoint[key]]);
+    console.log("SVG Path for first data point:", line(firstDataPointKeyValues));
+
+    // Continue with drawing lines as before
+    svg.selectAll("path")
+        .data(this.data)
+        .join("path")
+        .attr("d", d => {
+            const keyValuePairs = this.keys.map(key => [key, d[key]]);
+            return line(keyValuePairs); // Generates the "d" attribute for path
+        })
+        .attr("fill", "none")
+        .attr("stroke", d => this.color(d[this.colorAxis]))
+        .attr("stroke-width", 1.5)
+        .attr("opacity", 0.8)
 			// Mouseover event to show tooltip
 			.on("mouseover", function (event, d) {
 				plot.tooltip.style("visibility", "visible").html(() => {
