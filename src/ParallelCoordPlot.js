@@ -11,6 +11,7 @@ class ParallelCoordPlot {
       this.height = 500 - this.margin.top - this.margin.bottom;
       this.createDropdown();
       this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+      this.init();
     });
 }
 
@@ -34,13 +35,12 @@ setColorAxis(newAxis) {
     this.colorAxis = newAxis;
     const colorExtent = d3.extent(this.data, d => +d[newAxis]);
     this.color = d3.scaleSequential([colorExtent[0], colorExtent[1]], d3.interpolateInferno);
-    this.init();
+        this.updateLineColors();
   }
 
   init() {
     // Clear any existing content
     d3.select(this.containerSelector).select("svg").remove();
-
 
     const svg = d3.select(this.containerSelector)
       .append("svg")
@@ -171,10 +171,14 @@ updateLines() {
 
 updateLineColors() {
     const svg = d3.select(this.containerSelector).select("svg");
-    svg.selectAll("path")
-        .transition() // Optional: add a transition for smoother color change
+    // Ensure we only select paths that have data bound to them.
+    const pathsWithData = svg.selectAll("path")
+        .data(this.data); // Re-bind the data to ensure alignment.
+
+    pathsWithData.transition()
         .duration(500)
         .attr("stroke", d => this.color(d[this.colorAxis]));
 }
+
 
 }
