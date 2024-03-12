@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>D3 Parallel Coordinates Plot</title>
@@ -8,22 +9,66 @@
         body {
             font: 10px sans-serif;
         }
+
         /* Additional styling */
         .plot-container {
             width: 100%;
-            min-height: 400px; /* Adjust based on your needs */
+            min-height: 400px;
+            /* Adjust based on your needs */
+        }
+
+        /* Base styles for larger screens */
+        .color-axis-selector-label,
+        .color-axis-selector {
+            font-size: 14px;
+            /* default font size for desktops */
+        }
+
+        .note-text {
+            font-size: 14px;
+            /* default font size for desktops */
+        }
+
+        /* Media query for tablets */
+        @media (max-width: 768px) {
+            .note-text {
+                font-size: 16px;
+                /* slightly larger font size for tablets */
+            }
+
+            .color-axis-selector-label,
+            .color-axis-selector {
+                font-size: 16px;
+                /* slightly larger font size for tablets */
+            }
+        }
+
+        /* Media query for phones */
+        @media (max-width: 480px) {
+            .note-text {
+                font-size: 20px;
+                /* larger font size for phones */
+            }
+
+            .color-axis-selector-label,
+            .color-axis-selector {
+                font-size: 20px;
+                /* larger font size for phones */
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="plot1" class="plot-container"></div>
 
     <script src="src/ParallelCoordPlot.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const plot1 = new ParallelCoordPlot("./files/data.csv", "#plot1");
         });
     </script>
-    Note: you can select part of the data by brushing the scales.
+    <p class="note-text">Note: you can select part of the data by brushing the scales.</p>
 </body>
+
 </html>
