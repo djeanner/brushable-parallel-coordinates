@@ -28,6 +28,7 @@ Make sure your CSV file follows the format expected by the script, with column h
 To view the example visualization, open the index.html file in a web browser. This file is located at the root of this repository and will render the Parallel Coordinates Plot using the sample data provided. For a live version, you might consider hosting index.html on a web server or using services like GitHub Pages to easily share your visualization online.
 
 [Example](./demo.html)
+
 [Example reading from server](./demoFromServer.html)
 
 ## Contributing
