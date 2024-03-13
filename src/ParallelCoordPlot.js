@@ -72,16 +72,21 @@ class ParallelCoordPlot {
 				this.originalData = dataNumbered;
 				this.stringTables = stringTables;
 				this.keyTypes = keyTypes;
-				this.keys = Object.keys(this.data[0]); // filtering out columns
-				// For each string key, create a dropdown menu
-
-				this.createSetColorMapDropdown();
-				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
-				this.resetButton();
-				this.init();
+				this.processData();
 			});
-		}
-		
+		} else {
+			if ("jsonPath" in this.settings) {
+				d3.json(this.settings.jsonPath).then((dataInput) => {
+					let { dataNumbered, stringTables, keyTypes } =
+						transformDataEnhanced(dataInput);
+
+					this.data = dataNumbered;
+					this.originalData = dataNumbered;
+					this.stringTables = stringTables;
+					this.keyTypes = keyTypes;
+					this.processData();
+				});
+			} else {
 				let { dataNumbered, stringTables, keyTypes } =
 					transformDataEnhanced(dataFromHtml);
 
@@ -89,14 +94,19 @@ class ParallelCoordPlot {
 				this.originalData = dataNumbered;
 				this.stringTables = stringTables;
 				this.keyTypes = keyTypes;
-				this.keys = Object.keys(this.data[0]); // filtering out columns
-				// For each string key, create a dropdown menu
-
-				this.createSetColorMapDropdown();
-				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
-				this.resetButton();
-				this.init();
+				this.processData();
+			}
+		}
 	}
+
+	processData() {
+		this.keys = Object.keys(this.data[0]); // filtering out columns
+		this.createSetColorMapDropdown();
+		this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+		this.resetButton();
+		this.init();
+	}
+
 	getStringForKeyAndNumber(key, number, stringTables) {
 		let invertedTable = Object.keys(stringTables[key]).reduce((acc, cur) => {
 			acc[stringTables[key][cur]] = cur;

@@ -61,12 +61,21 @@
 
 <body>
     <div id="plot1" class="plot-container"></div>
+    <div id="plot2" class="plot-container"></div>
 
     <script src="src/ParallelCoordPlot.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const plot1 = new ParallelCoordPlot("#plot1",{csvPath: "./files/data.csv"});
-        });
+            //const plot1 = new ParallelCoordPlot("#plot1", { csvPath: "./files/data.csv" });
+            const plot1 = new ParallelCoordPlot("#plot1", { jsonPath: "./files/data.json" });
+            const plot2 = new ParallelCoordPlot("#plot2", {},
+                [
+                    { "name": "AMC Ambassador Brougham", "economy (mpg)": 13, "cylinders": 8, "displacement (cc)": 360, "power (hp)": 175, "weight (lb)": 3821, "0-60 mph (s)": 11, "year": 73 },
+                    { "name": "AMC Ambassador DPL", "economy (mpg)": 15, "cylinders": 8, "displacement (cc)": 390, "power (hp)": 190, "weight (lb)": 3850, "0-60 mph (s)": 8.5, "year": 70 },
+                    { "name": "AMC Ambassador DPL 3", "economy (mpg)": 15.4, "cylinders": 4, "displacement (cc)": 330, "power (hp)": 110, "weight (lb)": 3550, "0-60 mph (s)": 8.5, "year": 72 }
+                ]
+            );
+        })
     </script>
     <p class="note-text">Note: you can select part of the data by brushing the scales.</p>
 </body>
