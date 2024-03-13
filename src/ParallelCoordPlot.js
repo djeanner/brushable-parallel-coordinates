@@ -2,6 +2,11 @@ class ParallelCoordPlot {
 	constructor(csvFilePath, containerSelector) {
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
+
+		this.margin = { top: 50, right: 10, bottom: 10, left: 0 };
+		this.width = 960 - this.margin.left - this.margin.right;
+		this.height = 500 - this.margin.top - this.margin.bottom;
+
 		d3.csv(csvFilePath, d3.autoType).then((dataInput) => {
 			function transformDataEnhanced(data) {
 				let fieldTypes = {};
@@ -57,17 +62,24 @@ class ParallelCoordPlot {
 				transformDataEnhanced(dataInput);
 
 			this.data = dataNumbered;
+			this.originalData = dataNumbered;
 			this.stringTables = stringTables;
 			this.keyTypes = keyTypes;
-			//this.keys = Object.keys(this.data[0]).filter((d) => d !== "name"); // filtering out columns
 			this.keys = Object.keys(this.data[0]); // filtering out columns
-			// Set up dimensions here or in init method
-			this.margin = { top: 30, right: 10, bottom: 10, left: 0 };
-			this.width = 960 - this.margin.left - this.margin.right;
-			this.height = 500 - this.margin.top - this.margin.bottom;
-			this.createDropdown();
+			// For each string key, create a dropdown menu
+
+			this.createSetColorMapDropdown();
 			this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
 			this.init();
+			d3.select(this.containerSelector) // Select the container where you want to place the button
+				.append("button") // Append a button element
+				.text("Reset Data") // Set the button text
+				.attr("class", "reset-button") // Optionally, add a class for styling
+				.on("click", () => {
+					// Step 3: Define what happens when the button is clicked
+					this.data = this.originalData.slice(); // Reset this.data to the original data, use slice for a shallow copy if needed
+					this.init(); // Call the method that updates your visualization with the new data
+				});
 		});
 	}
 
@@ -80,7 +92,7 @@ class ParallelCoordPlot {
 		return invertedTable[number] || "Unknown";
 	}
 
-	createDropdown() {
+	createSetColorMapDropdown() {
 		const plot = this;
 
 		// Append a label before the dropdown
@@ -141,6 +153,7 @@ class ParallelCoordPlot {
 		this.y = {};
 
 		this.setupAxes(svg);
+		this.setupSelector(svg);
 		this.drawLines(svg);
 
 		this.tooltip = d3
@@ -260,7 +273,7 @@ class ParallelCoordPlot {
 			// Append axis name on top
 			axisGroup
 				.append("text")
-				.attr("transform", `translate(0, -10)`) // Move it slightly above the axis
+				.attr("transform", `translate(0, -15)`) // Move it slightly above the axis
 				.attr("fill", "#000") // Text color
 				.attr("text-anchor", "middle") // Center the text
 				.attr("dy", ".71em") // Adjust the distance from the axis
@@ -285,6 +298,57 @@ class ParallelCoordPlot {
 				.attr("class", `brush-${key}`)
 				.attr("transform", `translate(${axisPosition}, 0)`)
 				.call(brush);
+		});
+	}
+
+	setupSelector(svg) {
+		const plot = this;
+
+		// Loop over each key to set up axes and potentially dropdowns
+		this.keys.forEach((key, index) => {
+			let axisPosition = this.getPositionForKey(index);
+			let axisGenerator = d3.axisLeft(plot.y[key]);
+
+			// Container for the axis and potentially a dropdown
+			const axisContainer = svg
+				.append("g")
+				.attr("class", `axis-container-${key}`)
+				.attr("transform", `translate(${axisPosition}, 0)`);
+
+			axisContainer
+				.append("g")
+				.attr("class", `axis-${key}`)
+				.call(axisGenerator);
+
+			// Check if this key is of type string to add a dropdown
+			if (plot.keyTypes[key] === "string") {
+				const dropdown = axisContainer
+					.append("foreignObject")
+					.attr("width", 100) // Set appropriate width
+					.attr("height", 30) // Set appropriate height
+					.attr("x", -50) // Adjust X to align, may need tweaking
+					.attr("y", -45) // Adjust Y to position above the axis
+					.append("xhtml:body")
+					.style("margin", 0) // Remove default margin
+					.append("select")
+					.attr("class", `dropdown-${key}`)
+					.on("change", function () {
+						plot.updateData(this, key);
+					})
+					.on("change", function () {
+						plot.updateData(this, key);
+					});
+
+				// Populate dropdown options
+				dropdown.append("option").text("Select").attr("value", "");
+
+				Object.entries(plot.stringTables[key]).forEach(([str, index]) => {
+					dropdown.append("option").text(str).attr("value", index); // Use index or str according to your needs
+				});
+			}
+
+			// Setup brush logic remains unchanged
+			// ...
 		});
 	}
 
@@ -333,6 +397,7 @@ class ParallelCoordPlot {
 			return isVisible ? 0.8 : 0.03;
 		});
 	}
+
 	updateLineColors() {
 		const svg = d3.select(this.containerSelector).select("svg");
 		// Target only the paths with the "line" class for updating colors
@@ -341,5 +406,19 @@ class ParallelCoordPlot {
 			.transition()
 			.duration(200)
 			.attr("stroke", (d) => this.color(d[this.colorAxis]));
+		//	this.data = this.originalData;
+	}
+
+	updateData(input, key) {
+		const selectedValue = d3.select(input).property("value");
+		const filteredData = this.data.filter((d) => d[key] == selectedValue);
+		this.data = filteredData;
+		const stringInMenu = this.getStringForKeyAndNumber(
+			key,
+			selectedValue,
+			this.stringTables
+		);
+		this.init();
+		this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
 	}
 }
