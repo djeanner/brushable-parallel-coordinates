@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>D3 Parallel Coordinates Plot</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font: 10px sans-serif;
+        }
+
+        /* Additional styling */
+        .plot-container {
+            width: 100%;
+            min-height: 400px;
+            /* Adjust based on your needs */
+        }
+
+        /* Base styles for larger screens */
+        .color-axis-selector-label,
+        .color-axis-selector {
+            font-size: 14px;
+            /* default font size for desktops */
+        }
+
+        .note-text {
+            font-size: 14px;
+            /* default font size for desktops */
+        }
+
+        /* Media query for tablets */
+        @media (max-width: 768px) {
+            .note-text {
+                font-size: 16px;
+                /* slightly larger font size for tablets */
+            }
+
+            .color-axis-selector-label,
+            .color-axis-selector {
+                font-size: 16px;
+                /* slightly larger font size for tablets */
+            }
+        }
+
+        /* Media query for phones */
+        @media (max-width: 480px) {
+            .note-text {
+                font-size: 20px;
+                /* larger font size for phones */
+            }
+
+            .color-axis-selector-label,
+            .color-axis-selector {
+                font-size: 20px;
+                /* larger font size for phones */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="plot1" class="plot-container"></div>
+    <div id="plot2" class="plot-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/gh/djeanner/brushable-parallel-coordinates@latest/src/ParallelCoordPlot.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const plot1 = new ParallelCoordPlot("#plot1", { csvPath: "./files/data.csv" });
+            //const plot1 = new ParallelCoordPlot("#plot1", { jsonPath: "./files/data.json" });
+            const plot2 = new ParallelCoordPlot("#plot2", {},
+                [
+                    { "name": "AMC Ambassador Brougham", "economy (mpg)": 13, "cylinders": 8, "displacement (cc)": 360, "power (hp)": 175, "weight (lb)": 3821, "0-60 mph (s)": 11, "year": 73 },
+                    { "name": "AMC Ambassador DPL", "economy (mpg)": 15, "cylinders": 8, "displacement (cc)": 390, "power (hp)": 190, "weight (lb)": 3850, "0-60 mph (s)": 8.5, "year": 70 },
+                    { "name": "AMC Ambassador DPL 3", "economy (mpg)": 15.4, "cylinders": 4, "displacement (cc)": 330, "power (hp)": 110, "weight (lb)": 3550, "0-60 mph (s)": 8.5, "year": 72 }
+                ]
+            );
+        })
+    </script>
+    <p class="note-text">Note: you can select part of the data by brushing the scales.</p>
+</body>
+
+</html>
