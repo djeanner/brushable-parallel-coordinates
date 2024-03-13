@@ -217,6 +217,7 @@ class ParallelCoordPlot {
 				plot.tooltip.style("visibility", "hidden");
 			});
 	}
+	
 	setupAxes(svg) {
 		this.keys.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
@@ -376,8 +377,6 @@ class ParallelCoordPlot {
 			if (!d) {
 				return 0.1; // Fallback opacity for missing data
 			}
-
-			// Check if the line is within all brushes' extents
 			let isVisible = Array.from(this.brushes.entries()).every(
 				([key, [min, max]]) => {
 					const val = d[key];
@@ -398,7 +397,6 @@ class ParallelCoordPlot {
 			.transition()
 			.duration(200)
 			.attr("stroke", (d) => this.color(d[this.colorAxis]));
-		//	this.data = this.originalData;
 	}
 
 	updateData(input, key) {
@@ -410,8 +408,8 @@ class ParallelCoordPlot {
 			selectedValue,
 			this.stringTables
 		);
-		this.setColorAxis(key); // Initially set color axis to the first key
 		this.init();
+		this.brushes.clear();
 	}
 
 	resetButton() {
@@ -420,7 +418,6 @@ class ParallelCoordPlot {
 			.text("Reset Data") // Set the button text
 			.attr("class", "reset-button") // Optionally, add a class for styling
 			.on("click", () => {
-				// Step 3: Define what happens when the button is clicked
 				this.data = this.originalData; // Reset this.data to the original data, use slice for a shallow copy if needed
 				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
 				this.init(); // Call the method that updates your visualization with the new data
