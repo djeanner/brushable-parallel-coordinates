@@ -1,5 +1,4 @@
 class ParallelCoordPlot {
-
 	constructor(csvFilePath, containerSelector) {
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
@@ -56,7 +55,7 @@ class ParallelCoordPlot {
 
 			let { dataNumbered, stringTables, keyTypes } =
 				transformDataEnhanced(dataInput);
-		
+
 			this.data = dataNumbered;
 			this.stringTables = stringTables;
 			this.keyTypes = keyTypes;
