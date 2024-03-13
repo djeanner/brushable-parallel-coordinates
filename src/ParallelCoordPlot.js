@@ -70,16 +70,8 @@ class ParallelCoordPlot {
 
 			this.createSetColorMapDropdown();
 			this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+			this.resetButton();
 			this.init();
-			d3.select(this.containerSelector) // Select the container where you want to place the button
-				.append("button") // Append a button element
-				.text("Reset Data") // Set the button text
-				.attr("class", "reset-button") // Optionally, add a class for styling
-				.on("click", () => {
-					// Step 3: Define what happens when the button is clicked
-					this.data = this.originalData.slice(); // Reset this.data to the original data, use slice for a shallow copy if needed
-					this.init(); // Call the method that updates your visualization with the new data
-				});
 		});
 	}
 
@@ -394,7 +386,7 @@ class ParallelCoordPlot {
 				}
 			);
 
-			return isVisible ? 0.8 : 0.03;
+			return isVisible ? 0.8 : 0.1;
 		});
 	}
 
@@ -418,7 +410,21 @@ class ParallelCoordPlot {
 			selectedValue,
 			this.stringTables
 		);
+		this.setColorAxis(key); // Initially set color axis to the first key
 		this.init();
-		this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+	}
+
+	resetButton() {
+		d3.select(this.containerSelector) // Select the container where you want to place the button
+			.append("button") // Append a button element
+			.text("Reset Data") // Set the button text
+			.attr("class", "reset-button") // Optionally, add a class for styling
+			.on("click", () => {
+				// Step 3: Define what happens when the button is clicked
+				this.data = this.originalData; // Reset this.data to the original data, use slice for a shallow copy if needed
+				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+				this.init(); // Call the method that updates your visualization with the new data
+				this.brushes.clear();
+			});
 	}
 }
