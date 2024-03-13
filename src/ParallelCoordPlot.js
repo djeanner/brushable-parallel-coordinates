@@ -212,7 +212,6 @@ class ParallelCoordPlot {
 				plot.tooltip.style("visibility", "hidden");
 			});
 	}
-
 	setupAxes(svg) {
 		this.keys.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
@@ -252,11 +251,20 @@ class ParallelCoordPlot {
 			}
 
 			// Append and position the axis
-			svg
+			const axisGroup = svg
 				.append("g")
 				.attr("class", `axis-${key}`)
 				.attr("transform", `translate(${axisPosition}, 0)`)
 				.call(axisGenerator);
+
+			// Append axis name on top
+			axisGroup
+				.append("text")
+				.attr("transform", `translate(0, -10)`) // Move it slightly above the axis
+				.attr("fill", "#000") // Text color
+				.attr("text-anchor", "middle") // Center the text
+				.attr("dy", ".71em") // Adjust the distance from the axis
+				.text(key);
 
 			// Setup and append the corresponding brush
 			const brush = d3
