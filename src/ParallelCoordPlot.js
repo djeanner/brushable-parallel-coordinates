@@ -270,8 +270,8 @@ class ParallelCoordPlot {
 			const brush = d3
 				.brushY()
 				.extent([
-					[0 - 10, 0],
-					[0 + 10, this.height],
+					[-10, 0],
+					[10, this.height],
 				])
 				.on(
 					"start brush end",
