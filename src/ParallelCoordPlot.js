@@ -1,4 +1,5 @@
 class ParallelCoordPlot {
+
 	constructor(csvFilePath, containerSelector) {
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
@@ -55,10 +56,7 @@ class ParallelCoordPlot {
 
 			let { dataNumbered, stringTables, keyTypes } =
 				transformDataEnhanced(dataInput);
-			console.log("dataNumbered : ", dataNumbered);
-			console.log("stringTables : ", stringTables); // For reference, not needed for transformation
-			console.log("keyTypes : ", keyTypes); // To know the original type of each key
-
+		
 			this.data = dataNumbered;
 			this.stringTables = stringTables;
 			this.keyTypes = keyTypes;
@@ -122,6 +120,7 @@ class ParallelCoordPlot {
 	getPositionForKey(keyIndex, startPosition = 220, step = 100) {
 		return startPosition + keyIndex * step;
 	}
+
 	init() {
 		// Clear any existing content
 		d3.select(this.containerSelector).select("svg").remove();
@@ -155,7 +154,6 @@ class ParallelCoordPlot {
 			.style("border-width", "1px")
 			.style("border-radius", "5px")
 			.style("padding", "10px");
-
 	}
 
 	drawLines(svg) {
@@ -284,12 +282,9 @@ class ParallelCoordPlot {
 	}
 
 	brushed(event, key) {
-		console.log(`Brushed on ${key}:`, event.selection);
-		console.log(`event:`, event);
 		if (event.selection) {
 			let selection;
 			if (this.keyTypes[key] === "string") {
-				console.log(`String brush on ${key}`);
 				// Handle selection for string fields differently
 				const [y0, y1] = event.selection;
 				const selectedBands = this.y[key]
@@ -301,7 +296,6 @@ class ParallelCoordPlot {
 					);
 				this.brushes.set(key, selectedBands);
 			} else {
-				console.log(`String brush on ${key}`);
 				// Convert pixel selection to data values for numerical/boolean fields
 				selection = event.selection.map(this.y[key].invert, this.y[key]);
 				this.brushes.set(key, selection);
