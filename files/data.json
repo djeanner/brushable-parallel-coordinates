@@ -1,0 +1,52 @@
+[
+	{
+		"name": "AMC Ambassador Brougham",
+		"economy (mpg)": 13,
+		"cylinders": 8,
+		"displacement (cc)": 360,
+		"power (hp)": 175,
+		"weight (lb)": 3821,
+		"0-60 mph (s)": 11,
+		"year": 73
+	},
+	{
+		"name": "AMC Ambassador DPL",
+		"economy (mpg)": 15,
+		"cylinders": 8,
+		"displacement (cc)": 390,
+		"power (hp)": 190,
+		"weight (lb)": 3850,
+		"0-60 mph (s)": 8.5,
+		"year": 70
+	},
+	{
+		"name": "AMC Ambassador DPL 3",
+		"economy (mpg)": 15.4,
+		"cylinders": 4,
+		"displacement (cc)": 330,
+		"power (hp)": 110,
+		"weight (lb)": 3550,
+		"0-60 mph (s)": 8.5,
+		"year": 72
+	},
+	{
+		"name": "tsdsd Ambassador DPL",
+		"economy (mpg)": 15,
+		"cylinders": 8,
+		"displacement (cc)": 390,
+		"power (hp)": 190,
+		"weight (lb)": 3850,
+		"0-60 mph (s)": 8.5,
+		"year": 70
+	},
+	{
+		"name": "fsfsfdsfs Ambassador DPL 3",
+		"economy (mpg)": 15.4,
+		"cylinders": 4,
+		"displacement (cc)": 330,
+		"power (hp)": 110,
+		"weight (lb)": 3550,
+		"0-60 mph (s)": 8.5,
+		"year": 79
+	}
+]
