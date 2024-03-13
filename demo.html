@@ -65,7 +65,7 @@
     <script src="src/ParallelCoordPlot.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const plot1 = new ParallelCoordPlot("./files/data.csv", "#plot1");
+            const plot1 = new ParallelCoordPlot("#plot1",{csvPath: "./files/data.csv"});
         });
     </script>
     <p class="note-text">Note: you can select part of the data by brushing the scales.</p>

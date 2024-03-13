@@ -1,5 +1,13 @@
 class ParallelCoordPlot {
-	constructor(csvFilePath, containerSelector) {
+	constructor(containerSelector, options = {}, dataFromHtml = {}) {
+		const defaults = {
+			types: ["toCen"],
+			extract: "array",
+			selectionKeyTrue: "",
+			atomNumberKey: "molAtomIndices",
+		};
+		this.settings = { ...defaults, ...options };
+		// Override defaults with passed values
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
 
@@ -7,74 +15,88 @@ class ParallelCoordPlot {
 		this.width = 960 - this.margin.left - this.margin.right;
 		this.height = 500 - this.margin.top - this.margin.bottom;
 
-		d3.csv(csvFilePath, d3.autoType).then((dataInput) => {
-			function transformDataEnhanced(data) {
-				let fieldTypes = {};
-				let dataNumbered = [];
-				let stringTables = {};
-				let keyTypes = {};
+		function transformDataEnhanced(data) {
+			let fieldTypes = {};
+			let dataNumbered = [];
+			let stringTables = {};
+			let keyTypes = {};
 
-				// Step 1: Determine the types for each field
-				data.forEach((item) => {
-					Object.keys(item).forEach((key) => {
-						let value = item[key];
-						if (typeof value === "string") {
-							fieldTypes[key] = "string";
-						} else if (!fieldTypes[key]) {
-							// Mark as number or boolean for now, can be overridden by string later
-							fieldTypes[key] = typeof value;
+			// Step 1: Determine the types for each field
+			data.forEach((item) => {
+				Object.keys(item).forEach((key) => {
+					let value = item[key];
+					if (typeof value === "string") {
+						fieldTypes[key] = "string";
+					} else if (!fieldTypes[key]) {
+						// Mark as number or boolean for now, can be overridden by string later
+						fieldTypes[key] = typeof value;
+					}
+				});
+			});
+
+			// Step 2: Transform the data
+			data.forEach((item) => {
+				let transformedItem = {};
+
+				Object.keys(item).forEach((key) => {
+					let value = item[key];
+					if (fieldTypes[key] === "string") {
+						value = String(value); // Convert numbers/booleans to strings
+						if (!stringTables[key]) {
+							stringTables[key] = {};
 						}
-					});
+						if (!(value in stringTables[key])) {
+							stringTables[key][value] = Object.keys(stringTables[key]).length;
+						}
+						transformedItem[key] = stringTables[key][value];
+					} else if (fieldTypes[key] === "number") {
+						transformedItem[key] = value;
+					} else if (fieldTypes[key] === "boolean") {
+						transformedItem[key] = value ? 1 : 0;
+					}
+					keyTypes[key] = fieldTypes[key];
 				});
 
-				// Step 2: Transform the data
-				data.forEach((item) => {
-					let transformedItem = {};
+				dataNumbered.push(transformedItem);
+			});
 
-					Object.keys(item).forEach((key) => {
-						let value = item[key];
-						if (fieldTypes[key] === "string") {
-							value = String(value); // Convert numbers/booleans to strings
-							if (!stringTables[key]) {
-								stringTables[key] = {};
-							}
-							if (!(value in stringTables[key])) {
-								stringTables[key][value] = Object.keys(
-									stringTables[key]
-								).length;
-							}
-							transformedItem[key] = stringTables[key][value];
-						} else if (fieldTypes[key] === "number") {
-							transformedItem[key] = value;
-						} else if (fieldTypes[key] === "boolean") {
-							transformedItem[key] = value ? 1 : 0;
-						}
-						keyTypes[key] = fieldTypes[key];
-					});
+			return { dataNumbered, stringTables, keyTypes };
+		}
 
-					dataNumbered.push(transformedItem);
-				});
+		if ("csvPath" in this.settings) {
+			d3.csv(this.settings.csvPath, d3.autoType).then((dataInput) => {
+				let { dataNumbered, stringTables, keyTypes } =
+					transformDataEnhanced(dataInput);
 
-				return { dataNumbered, stringTables, keyTypes };
-			}
+				this.data = dataNumbered;
+				this.originalData = dataNumbered;
+				this.stringTables = stringTables;
+				this.keyTypes = keyTypes;
+				this.keys = Object.keys(this.data[0]); // filtering out columns
+				// For each string key, create a dropdown menu
 
-			let { dataNumbered, stringTables, keyTypes } =
-				transformDataEnhanced(dataInput);
+				this.createSetColorMapDropdown();
+				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+				this.resetButton();
+				this.init();
+			});
+		}
+		
+				let { dataNumbered, stringTables, keyTypes } =
+					transformDataEnhanced(dataFromHtml);
 
-			this.data = dataNumbered;
-			this.originalData = dataNumbered;
-			this.stringTables = stringTables;
-			this.keyTypes = keyTypes;
-			this.keys = Object.keys(this.data[0]); // filtering out columns
-			// For each string key, create a dropdown menu
+				this.data = dataNumbered;
+				this.originalData = dataNumbered;
+				this.stringTables = stringTables;
+				this.keyTypes = keyTypes;
+				this.keys = Object.keys(this.data[0]); // filtering out columns
+				// For each string key, create a dropdown menu
 
-			this.createSetColorMapDropdown();
-			this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
-			this.resetButton();
-			this.init();
-		});
+				this.createSetColorMapDropdown();
+				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+				this.resetButton();
+				this.init();
 	}
-
 	getStringForKeyAndNumber(key, number, stringTables) {
 		let invertedTable = Object.keys(stringTables[key]).reduce((acc, cur) => {
 			acc[stringTables[key][cur]] = cur;
@@ -217,7 +239,7 @@ class ParallelCoordPlot {
 				plot.tooltip.style("visibility", "hidden");
 			});
 	}
-	
+
 	setupAxes(svg) {
 		this.keys.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
