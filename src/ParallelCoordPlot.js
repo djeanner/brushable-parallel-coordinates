@@ -1,19 +1,22 @@
 class ParallelCoordPlot {
 	constructor(containerSelector, options = {}, dataFromHtml = {}) {
 		const defaults = {
-			types: ["toCen"],
-			extract: "array",
-			selectionKeyTrue: "",
-			atomNumberKey: "molAtomIndices",
+			width: 2000,
+			height: 500,
+			margin: { top: 50, right: 10, bottom: 10, left: 0 },
 		};
 		this.settings = { ...defaults, ...options };
 		// Override defaults with passed values
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
-
-		this.margin = { top: 50, right: 10, bottom: 10, left: 0 };
-		this.width = 960 - this.margin.left - this.margin.right;
-		this.height = 500 - this.margin.top - this.margin.bottom;
+		this.width =
+			this.settings.width -
+			this.settings.margin.left -
+			this.settings.margin.right;
+		this.height =
+			this.settings.height -
+			this.settings.margin.top -
+			this.settings.margin.bottom;
 
 		function transformDataEnhanced(data) {
 			let fieldTypes = {};
@@ -169,10 +172,19 @@ class ParallelCoordPlot {
 		let svg = d3
 			.select(this.containerSelector)
 			.append("svg")
-			.attr("width", this.width + this.margin.left + this.margin.right)
-			.attr("height", this.height + this.margin.top + this.margin.bottom)
+			.attr(
+				"width",
+				this.width + this.settings.margin.left + this.settings.margin.right
+			)
+			.attr(
+				"height",
+				this.height + this.settings.margin.top + this.settings.margin.bottom
+			)
 			.append("g")
-			.attr("transform", `translate(${this.margin.left},${this.margin.top})`);
+			.attr(
+				"transform",
+				`translate(${this.settings.margin.left},${this.settings.margin.top})`
+			);
 
 		this.x = d3
 			.scalePoint()
