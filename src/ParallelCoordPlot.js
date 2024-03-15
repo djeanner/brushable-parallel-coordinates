@@ -3,7 +3,9 @@ class ParallelCoordPlot {
 		const defaults = {
 			width: 2000,
 			height: 500,
+			colorMap: "Warm", // "Viridis", "Plasma", "Cividis", "Cool", "Warm", "Inferno"
 			margin: { top: 50, right: 10, bottom: 10, left: 0 },
+			
 		};
 		this.settings = { ...defaults, ...options };
 		// Override defaults with passed values
@@ -17,7 +19,6 @@ class ParallelCoordPlot {
 			this.settings.height -
 			this.settings.margin.top -
 			this.settings.margin.bottom;
-
 		function transformDataEnhanced(data) {
 			let fieldTypes = {};
 			let dataNumbered = [];
@@ -108,6 +109,7 @@ class ParallelCoordPlot {
 		this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
 		this.resetButton();
 		this.init();
+		this.setColorMap(); // Ensure the color map is updated according to the processed data
 	}
 
 	getStringForKeyAndNumber(key, number, stringTables) {
@@ -150,14 +152,11 @@ class ParallelCoordPlot {
 			.text((d) => d)
 			.attr("value", (d) => d);
 	}
-
 	setColorAxis(newAxis) {
 		this.colorAxis = newAxis;
-		const colorExtent = d3.extent(this.data, (d) => +d[newAxis]);
-		this.color = d3.scaleSequential(
-			[colorExtent[0], colorExtent[1]],
-			d3.interpolateInferno
-		);
+		// Now, instead of setting the color scale directly here,
+		// ensure the existing color scale is correctly applied or updated.
+		this.setColorMap(); // This ensures the color scale is updated according to the current settings and data extent.
 		this.updateLineColors();
 	}
 
@@ -478,5 +477,28 @@ class ParallelCoordPlot {
 				this.init(); // Re-initialize the visualization
 				this.brushes.clear(); // Clear any active brushes
 			});
+	}
+
+	setColorMap() {
+		const colorExtent = d3.extent(this.data, (d) => +d[this.colorAxis]);
+		const interpolators = {
+			Viridis: d3.interpolateViridis,
+			Plasma: d3.interpolatePlasma,
+			Cividis: d3.interpolateCividis,
+			Cool: d3.interpolateCool,
+			Warm: d3.interpolateWarm,
+			Inferno: d3.interpolateInferno, // Default
+		};
+
+		const interpolator = interpolators[this.settings.colorMap];
+
+		if (interpolator) {
+			this.color = d3.scaleSequential(interpolator).domain(colorExtent);
+		} else {
+			console.error("Invalid color map specified. Falling back to default.");
+			this.color = d3
+				.scaleSequential(d3.interpolateInferno)
+				.domain(colorExtent);
+		}
 	}
 }
