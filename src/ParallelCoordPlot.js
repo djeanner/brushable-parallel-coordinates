@@ -119,20 +119,26 @@ class ParallelCoordPlot {
 	createSetColorMapDropdown() {
 		const plot = this;
 
-		// Append a label before the dropdown
-		d3.select(this.containerSelector)
-			.append("label")
-			.attr("class", "color-axis-selector-label") // Optional: for styling the label
-			.text("Select colors according to "); // The text content for the label
-
-		// Continue with the dropdown creation as before
-		const dropdown = d3
+		// Ensure there's a controls container below the SVG
+		const controlsContainer = d3
 			.select(this.containerSelector)
+			.append("div") // This div will hold controls like dropdowns
+			.attr("class", "controls-container"); // For styling and structure
+
+		// Append a label for the dropdown to the controls container
+		controlsContainer
+			.append("label")
+			.attr("class", "color-axis-selector-label")
+			.text("Select colors according to ");
+
+		// Append the dropdown to the controls container
+		const dropdown = controlsContainer
 			.append("select")
 			.attr("class", "color-axis-selector")
 			.on("change", function () {
 				plot.setColorAxis(this.value);
 			});
+
 		dropdown
 			.selectAll("option")
 			.data(this.keys)
@@ -445,15 +451,20 @@ class ParallelCoordPlot {
 	}
 
 	resetButton() {
-		d3.select(this.containerSelector) // Select the container where you want to place the button
-			.append("button") // Append a button element
-			.text("Reset Data") // Set the button text
-			.attr("class", "reset-button") // Optionally, add a class for styling
+		this.x;
+		const controlsContainer = d3
+			.select(this.containerSelector)
+			.select(".controls-container");
+
+		controlsContainer
+			.append("button")
+			.text("Reset Data")
+			.attr("class", "reset-button")
 			.on("click", () => {
-				this.data = this.originalData; // Reset this.data to the original data, use slice for a shallow copy if needed
-				this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
-				this.init(); // Call the method that updates your visualization with the new data
-				this.brushes.clear();
+				this.data = this.originalData; // Reset this.data to the original data
+				this.setColorAxis(this.keys[0]); // Optionally reset color axis to the first key
+				this.init(); // Re-initialize the visualization
+				this.brushes.clear(); // Clear any active brushes
 			});
 	}
 }
