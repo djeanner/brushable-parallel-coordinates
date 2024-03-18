@@ -3,11 +3,11 @@ class ParallelCoordPlot {
 		const defaults = {
 			width: 2000,
 			height: 500,
-			colorMap: "Warm", // "Viridis", "Plasma", "Cividis", "Cool", "Warm", "Inferno"
+			colorMap: "Warm", // Example options for the color map
 			margin: { top: 50, right: 10, bottom: 10, left: 0 },
 		};
+
 		this.settings = { ...defaults, ...options };
-		// Override defaults with passed values
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
 		this.width =
@@ -18,147 +18,140 @@ class ParallelCoordPlot {
 			this.settings.height -
 			this.settings.margin.top -
 			this.settings.margin.bottom;
+		this.loadData();
+	}
 
-		function transformDataEnhanced(data) {
-			let fieldTypes = {};
-			let dataNumbered = [];
-			let stringTables = {};
-			let keyTypes = {};
+	async loadData() {
+		try {
+			let dataInput;
+			if ("csvPath" in this.settings) {
+				dataInput = await d3.csv(this.settings.csvPath, d3.autoType);
+			} else if ("jsonPath" in this.settings) {
+				dataInput = await d3.json(this.settings.jsonPath);
+			} else {
+				dataInput = dataFromHtml;
+			}
 
-			// Step 1: Determine the types for each field
-			data.forEach((item) => {
-				Object.keys(item).forEach((key) => {
-					let value = item[key];
-					if (typeof value === "string") {
-						fieldTypes[key] = "string";
-					} else if (!fieldTypes[key]) {
-						// Mark as number or boolean for now, can be overridden by string later
-						fieldTypes[key] = typeof value;
-					}
-				});
-			});
-
-			// Step 2: Transform the data
-			const allValues = {}; // To track values for each key across all items
-
-			// Initial transformation and tracking values for testAllEqualValue
-			data.forEach((item) => {
-				let transformedItem = {};
-
-				Object.keys(item).forEach((key) => {
-					let value = item[key];
-					allValues[key] = allValues[key] || new Set();
-					allValues[key].add(value);
-
-					if (fieldTypes[key] === "string") {
-						value = String(value); // Convert numbers/booleans to strings
-						if (!stringTables[key]) {
-							stringTables[key] = {};
-						}
-						if (!(value in stringTables[key])) {
-							stringTables[key][value] = Object.keys(stringTables[key]).length;
-						}
-						transformedItem[key] = stringTables[key][value];
-					} else if (fieldTypes[key] === "number") {
-						transformedItem[key] = value;
-					} else if (fieldTypes[key] === "boolean") {
-						transformedItem[key] = value ? 1 : 0;
-					}
-					keyTypes[key] = fieldTypes[key];
-				});
-
-				dataNumbered.push(transformedItem);
-			});
-
-			let keysWithNoIdenticalValues = [];
-			let dataNoIdenticalValue = [];
-
-			// Identifying keys with identical values
-			Object.keys(allValues).forEach((key) => {
-				if (allValues[key].size === 1) {
-					keysWithNoIdenticalValues.push(key);
-				}
-			});
-
-			dataNoIdenticalValue = dataNumbered.map((item) => {
-				let filteredItem = {};
-				Object.keys(item).forEach((key) => {
-					if (!keysWithNoIdenticalValues.includes(key)) {
-						filteredItem[key] = item[key];
-					}
-				});
-				return filteredItem;
-			});
-
-			let keyNoIdenticalValue = Object.keys(keyTypes).filter(
-				(key) => !keysWithNoIdenticalValues.includes(key)
-			);
-
-			return {
+			// Correctly destructure the object returned by transformDataEnhanced
+			const {
 				dataNumbered,
 				stringTables,
 				keyTypes,
 				keyNoIdenticalValue,
 				dataNoIdenticalValue,
-			};
+			} = this.transformDataEnhanced(dataInput);
+
+			this.setDataProperties(
+				dataNumbered,
+				stringTables,
+				keyTypes,
+				keyNoIdenticalValue,
+				dataNoIdenticalValue
+			);
+		} catch (error) {
+			console.error("Failed to load data:", error);
 		}
+	}
 
-		if ("csvPath" in this.settings) {
-			d3.csv(this.settings.csvPath, d3.autoType).then((dataInput) => {
-				let {
-					dataNumbered,
-					stringTables,
-					keyTypes,
-					keyNoIdenticalValue,
-					dataNoIdenticalValue,
-				} = transformDataEnhanced(dataInput);
+	transformDataEnhanced(data) {
+		let fieldTypes = {};
+		let dataNumbered = [];
+		let stringTables = {};
+		let keyTypes = {};
 
-				this.data = dataNumbered;
-				
-				this.originalData = dataNoIdenticalValue;
-				this.stringTables = stringTables;
-				this.keyTypes = keyTypes;
-				this.keyNoIdenticalValue = keyNoIdenticalValue;
-				this.dataNoIdenticalValue = dataNoIdenticalValue;
-				this.processData();
+		// Step 1: Determine the types for each field
+		data.forEach((item) => {
+			Object.keys(item).forEach((key) => {
+				let value = item[key];
+				if (typeof value === "string") {
+					fieldTypes[key] = "string";
+				} else if (!fieldTypes[key]) {
+					// Mark as number or boolean for now, can be overridden by string later
+					fieldTypes[key] = typeof value;
+				}
 			});
-		} else {
-			if ("jsonPath" in this.settings) {
-				d3.json(this.settings.jsonPath).then((dataInput) => {
-					let {
-						dataNumbered,
-						stringTables,
-						keyTypes,
-						keyNoIdenticalValue,
-						dataNoIdenticalValue,
-					} = transformDataEnhanced(dataInput);
+		});
 
-					this.data = dataNumbered;
-					this.originalData = dataNoIdenticalValue;
-					this.stringTables = stringTables;
-					this.keyTypes = keyTypes;
-					this.keyNoIdenticalValue = keyNoIdenticalValue;
-					this.dataNoIdenticalValue = dataNoIdenticalValue;
-					this.processData();
-				});
-			} else {
-				let {
-					dataNumbered,
-					stringTables,
-					keyTypes,
-					keyNoIdenticalValue,
-					dataNoIdenticalValue,
-				} = transformDataEnhanced(dataFromHtml);
+		// Step 2: Transform the data
+		const allValues = {}; // To track values for each key across all items
 
-				this.data = dataNumbered;
-				this.originalData = dataNoIdenticalValue;
-				this.stringTables = stringTables;
-				this.keyTypes = keyTypes;
-				this.keyNoIdenticalValue = keyNoIdenticalValue;
-				this.dataNoIdenticalValue = dataNoIdenticalValue;
-				this.processData();
+		// Initial transformation and tracking values for testAllEqualValue
+		data.forEach((item) => {
+			let transformedItem = {};
+
+			Object.keys(item).forEach((key) => {
+				let value = item[key];
+				allValues[key] = allValues[key] || new Set();
+				allValues[key].add(value);
+
+				if (fieldTypes[key] === "string") {
+					value = String(value); // Convert numbers/booleans to strings
+					if (!stringTables[key]) {
+						stringTables[key] = {};
+					}
+					if (!(value in stringTables[key])) {
+						stringTables[key][value] = Object.keys(stringTables[key]).length;
+					}
+					transformedItem[key] = stringTables[key][value];
+				} else if (fieldTypes[key] === "number") {
+					transformedItem[key] = value;
+				} else if (fieldTypes[key] === "boolean") {
+					transformedItem[key] = value ? 1 : 0;
+				}
+				keyTypes[key] = fieldTypes[key];
+			});
+
+			dataNumbered.push(transformedItem);
+		});
+
+		let keysWithNoIdenticalValues = [];
+		let dataNoIdenticalValue = [];
+
+		// Identifying keys with identical values
+		Object.keys(allValues).forEach((key) => {
+			if (allValues[key].size === 1) {
+				keysWithNoIdenticalValues.push(key);
 			}
-		}
+		});
+
+		dataNoIdenticalValue = dataNumbered.map((item) => {
+			let filteredItem = {};
+			Object.keys(item).forEach((key) => {
+				if (!keysWithNoIdenticalValues.includes(key)) {
+					filteredItem[key] = item[key];
+				}
+			});
+			return filteredItem;
+		});
+
+		let keyNoIdenticalValue = Object.keys(keyTypes).filter(
+			(key) => !keysWithNoIdenticalValues.includes(key)
+		);
+		return {
+			dataNumbered,
+			stringTables,
+			keyTypes,
+			keyNoIdenticalValue,
+			dataNoIdenticalValue,
+		};
+	}
+
+	setDataProperties(
+		dataNumbered,
+		stringTables,
+		keyTypes,
+		keyNoIdenticalValue,
+		dataNoIdenticalValue
+	) {
+		this.data = dataNumbered;
+		this.stringTables = stringTables;
+		this.keyTypes = keyTypes;
+
+		this.originalData = dataNoIdenticalValue;
+		this.keyTypes = keyTypes;
+		this.keyNoIdenticalValue = keyNoIdenticalValue;
+		this.dataNoIdenticalValue = dataNoIdenticalValue;
+		this.processData();
 	}
 
 	processData() {
@@ -293,7 +286,9 @@ class ParallelCoordPlot {
 			.data(plot.dataNoIdenticalValue)
 			.join("path")
 			.attr("class", "line")
-			.attr("d", (d) => line(plot.keyNoIdenticalValue.map((key) => [key, d[key]])))
+			.attr("d", (d) =>
+				line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
+			)
 			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
 			.style("fill", "none")
 			.style("stroke-width", "1.5px")
@@ -509,7 +504,9 @@ class ParallelCoordPlot {
 
 	updateData(input, key) {
 		const selectedValue = d3.select(input).property("value");
-		const filteredData = this.dataNoIdenticalValue.filter((d) => d[key] == selectedValue);
+		const filteredData = this.dataNoIdenticalValue.filter(
+			(d) => d[key] == selectedValue
+		);
 		this.dataNoIdenticalValue = filteredData;
 		const stringInMenu = this.getStringForKeyAndNumber(
 			key,
