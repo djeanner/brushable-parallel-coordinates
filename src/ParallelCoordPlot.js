@@ -5,7 +5,6 @@ class ParallelCoordPlot {
 			height: 500,
 			colorMap: "Warm", // "Viridis", "Plasma", "Cividis", "Cool", "Warm", "Inferno"
 			margin: { top: 50, right: 10, bottom: 10, left: 0 },
-			
 		};
 		this.settings = { ...defaults, ...options };
 		// Override defaults with passed values
@@ -19,6 +18,7 @@ class ParallelCoordPlot {
 			this.settings.height -
 			this.settings.margin.top -
 			this.settings.margin.bottom;
+
 		function transformDataEnhanced(data) {
 			let fieldTypes = {};
 			let dataNumbered = [];
@@ -39,11 +39,17 @@ class ParallelCoordPlot {
 			});
 
 			// Step 2: Transform the data
+			const allValues = {}; // To track values for each key across all items
+
+			// Initial transformation and tracking values for testAllEqualValue
 			data.forEach((item) => {
 				let transformedItem = {};
 
 				Object.keys(item).forEach((key) => {
 					let value = item[key];
+					allValues[key] = allValues[key] || new Set();
+					allValues[key].add(value);
+
 					if (fieldTypes[key] === "string") {
 						value = String(value); // Convert numbers/booleans to strings
 						if (!stringTables[key]) {
@@ -64,49 +70,101 @@ class ParallelCoordPlot {
 				dataNumbered.push(transformedItem);
 			});
 
-			return { dataNumbered, stringTables, keyTypes };
+			let keysWithNoIdenticalValues = [];
+			let dataNoIdenticalValue = [];
+
+			// Identifying keys with identical values
+			Object.keys(allValues).forEach((key) => {
+				if (allValues[key].size === 1) {
+					keysWithNoIdenticalValues.push(key);
+				}
+			});
+
+			dataNoIdenticalValue = dataNumbered.map((item) => {
+				let filteredItem = {};
+				Object.keys(item).forEach((key) => {
+					if (!keysWithNoIdenticalValues.includes(key)) {
+						filteredItem[key] = item[key];
+					}
+				});
+				return filteredItem;
+			});
+
+			let keyNoIdenticalValue = Object.keys(keyTypes).filter(
+				(key) => !keysWithNoIdenticalValues.includes(key)
+			);
+
+			return {
+				dataNumbered,
+				stringTables,
+				keyTypes,
+				keyNoIdenticalValue,
+				dataNoIdenticalValue,
+			};
 		}
 
 		if ("csvPath" in this.settings) {
 			d3.csv(this.settings.csvPath, d3.autoType).then((dataInput) => {
-				let { dataNumbered, stringTables, keyTypes } =
-					transformDataEnhanced(dataInput);
+				let {
+					dataNumbered,
+					stringTables,
+					keyTypes,
+					keyNoIdenticalValue,
+					dataNoIdenticalValue,
+				} = transformDataEnhanced(dataInput);
 
 				this.data = dataNumbered;
-				this.originalData = dataNumbered;
+				
+				this.originalData = dataNoIdenticalValue;
 				this.stringTables = stringTables;
 				this.keyTypes = keyTypes;
+				this.keyNoIdenticalValue = keyNoIdenticalValue;
+				this.dataNoIdenticalValue = dataNoIdenticalValue;
 				this.processData();
 			});
 		} else {
 			if ("jsonPath" in this.settings) {
 				d3.json(this.settings.jsonPath).then((dataInput) => {
-					let { dataNumbered, stringTables, keyTypes } =
-						transformDataEnhanced(dataInput);
+					let {
+						dataNumbered,
+						stringTables,
+						keyTypes,
+						keyNoIdenticalValue,
+						dataNoIdenticalValue,
+					} = transformDataEnhanced(dataInput);
 
 					this.data = dataNumbered;
-					this.originalData = dataNumbered;
+					this.originalData = dataNoIdenticalValue;
 					this.stringTables = stringTables;
 					this.keyTypes = keyTypes;
+					this.keyNoIdenticalValue = keyNoIdenticalValue;
+					this.dataNoIdenticalValue = dataNoIdenticalValue;
 					this.processData();
 				});
 			} else {
-				let { dataNumbered, stringTables, keyTypes } =
-					transformDataEnhanced(dataFromHtml);
+				let {
+					dataNumbered,
+					stringTables,
+					keyTypes,
+					keyNoIdenticalValue,
+					dataNoIdenticalValue,
+				} = transformDataEnhanced(dataFromHtml);
 
 				this.data = dataNumbered;
-				this.originalData = dataNumbered;
+				this.originalData = dataNoIdenticalValue;
 				this.stringTables = stringTables;
 				this.keyTypes = keyTypes;
+				this.keyNoIdenticalValue = keyNoIdenticalValue;
+				this.dataNoIdenticalValue = dataNoIdenticalValue;
 				this.processData();
 			}
 		}
 	}
 
 	processData() {
-		this.keys = Object.keys(this.data[0]); // filtering out columns
+		this.keys = Object.keys(this.dataNoIdenticalValue[0]); // filtering out columns
 		this.createSetColorMapDropdown();
-		this.setColorAxis(this.keys[0]); // Initially set color axis to the first key
+		this.setColorAxis(this.keyNoIdenticalValue[0]); // Initially set color axis to the first key
 		this.resetButton();
 		this.init();
 		this.setColorMap(); // Ensure the color map is updated according to the processed data
@@ -146,12 +204,13 @@ class ParallelCoordPlot {
 
 		dropdown
 			.selectAll("option")
-			.data(this.keys)
+			.data(this.keyNoIdenticalValue)
 			.enter()
 			.append("option")
 			.text((d) => d)
 			.attr("value", (d) => d);
 	}
+
 	setColorAxis(newAxis) {
 		this.colorAxis = newAxis;
 		// Now, instead of setting the color scale directly here,
@@ -189,7 +248,7 @@ class ParallelCoordPlot {
 			.scalePoint()
 			.range([0, this.width])
 			.padding(1)
-			.domain(this.keys);
+			.domain(this.keyNoIdenticalValue);
 
 		this.y = {};
 
@@ -215,7 +274,7 @@ class ParallelCoordPlot {
 		const line = d3
 			.line()
 			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
-			.x((d) => plot.getPositionForKey(plot.keys.indexOf(d[0]))) // Update x position to match axis
+			.x((d) => plot.getPositionForKey(plot.keyNoIdenticalValue.indexOf(d[0]))) // Update x position to match axis
 			.y((d) => {
 				// Adjust y-value computation based on field type
 				if (plot.keyTypes[d[0]] === "string") {
@@ -231,10 +290,10 @@ class ParallelCoordPlot {
 		// Draw lines
 		svg
 			.selectAll("path.line")
-			.data(plot.data)
+			.data(plot.dataNoIdenticalValue)
 			.join("path")
 			.attr("class", "line")
-			.attr("d", (d) => line(plot.keys.map((key) => [key, d[key]])))
+			.attr("d", (d) => line(plot.keyNoIdenticalValue.map((key) => [key, d[key]])))
 			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
 			.style("fill", "none")
 			.style("stroke-width", "1.5px")
@@ -268,7 +327,7 @@ class ParallelCoordPlot {
 	}
 
 	setupAxes(svg) {
-		this.keys.forEach((key, index) => {
+		this.keyNoIdenticalValue.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
 			let axisGenerator;
 
@@ -299,7 +358,7 @@ class ParallelCoordPlot {
 				// Setup for non-string fields
 				this.y[key] = d3
 					.scaleLinear()
-					.domain(d3.extent(this.data, (d) => +d[key]))
+					.domain(d3.extent(this.dataNoIdenticalValue, (d) => +d[key]))
 					.range([this.height, 0]);
 
 				axisGenerator = d3.axisLeft(this.y[key]);
@@ -347,7 +406,7 @@ class ParallelCoordPlot {
 		const plot = this;
 
 		// Loop over each key to set up axes and potentially dropdowns
-		this.keys.forEach((key, index) => {
+		this.keyNoIdenticalValue.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
 			let axisGenerator = d3.axisLeft(plot.y[key]);
 
@@ -450,8 +509,8 @@ class ParallelCoordPlot {
 
 	updateData(input, key) {
 		const selectedValue = d3.select(input).property("value");
-		const filteredData = this.data.filter((d) => d[key] == selectedValue);
-		this.data = filteredData;
+		const filteredData = this.dataNoIdenticalValue.filter((d) => d[key] == selectedValue);
+		this.dataNoIdenticalValue = filteredData;
 		const stringInMenu = this.getStringForKeyAndNumber(
 			key,
 			selectedValue,
@@ -472,15 +531,15 @@ class ParallelCoordPlot {
 			.text("Reset Data")
 			.attr("class", "reset-button")
 			.on("click", () => {
-				this.data = this.originalData; // Reset this.data to the original data
-				this.setColorAxis(this.keys[0]); // Optionally reset color axis to the first key
+				this.dataNoIdenticalValue = this.originalData; // Reset this.dataNoIdenticalValue to the original data
+				this.setColorAxis(this.keyNoIdenticalValue[0]); // Optionally reset color axis to the first key
 				this.init(); // Re-initialize the visualization
 				this.brushes.clear(); // Clear any active brushes
 			});
 	}
 
 	setColorMap() {
-		const colorExtent = d3.extent(this.data, (d) => +d[this.colorAxis]);
+		const colorExtent = d3.extent(this.originalData, (d) => +d[this.colorAxis]);
 		const interpolators = {
 			Viridis: d3.interpolateViridis,
 			Plasma: d3.interpolatePlasma,
