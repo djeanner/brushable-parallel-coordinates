@@ -39,6 +39,7 @@ class ParallelCoordPlot {
 				keyTypes,
 				keyNoIdenticalValue,
 				dataNoIdenticalValue,
+				rejectedKeys,
 			} = this.transformDataEnhanced(dataInput);
 
 			this.setDataProperties(
@@ -46,7 +47,8 @@ class ParallelCoordPlot {
 				stringTables,
 				keyTypes,
 				keyNoIdenticalValue,
-				dataNoIdenticalValue
+				dataNoIdenticalValue,
+				rejectedKeys
 			);
 		} catch (error) {
 			console.error("Failed to load data:", error);
@@ -124,6 +126,24 @@ class ParallelCoordPlot {
 			return filteredItem;
 		});
 
+		let rejectedKeys = `<br>`;
+		let item = dataNumbered[0];
+		Object.keys(item).forEach((key) => {
+			if (keysWithNoIdenticalValues.includes(key)) {
+				let value;
+				if (keyTypes[key] === "string") {
+					// Find the original string value from stringTables
+					value = Object.keys(stringTables[key]).find(
+						(keyStr) => stringTables[key][keyStr] === item[key]
+					);
+				} else {
+					// For non-string values, use the value directly
+					value = item[key];
+				}
+				// Append the key and its original value to the rejectedKeys string
+				rejectedKeys += `<strong><i>${key}:</i></strong> ${value}<br>`;
+			}
+		});
 		let keyNoIdenticalValue = Object.keys(keyTypes).filter(
 			(key) => !keysWithNoIdenticalValues.includes(key)
 		);
@@ -133,6 +153,7 @@ class ParallelCoordPlot {
 			keyTypes,
 			keyNoIdenticalValue,
 			dataNoIdenticalValue,
+			rejectedKeys,
 		};
 	}
 
@@ -141,7 +162,8 @@ class ParallelCoordPlot {
 		stringTables,
 		keyTypes,
 		keyNoIdenticalValue,
-		dataNoIdenticalValue
+		dataNoIdenticalValue,
+		rejectedKeys
 	) {
 		this.data = dataNumbered;
 		this.stringTables = stringTables;
@@ -151,6 +173,7 @@ class ParallelCoordPlot {
 		this.keyTypes = keyTypes;
 		this.keyNoIdenticalValue = keyNoIdenticalValue;
 		this.dataNoIdenticalValue = dataNoIdenticalValue;
+		this.rejectedKeys = rejectedKeys;
 		this.processData();
 	}
 
@@ -306,6 +329,7 @@ class ParallelCoordPlot {
 								: d[key];
 						content += `<strong>${key}:</strong> ${value}<br>`;
 					}
+					content += plot.rejectedKeys;
 					return content;
 				});
 			})
