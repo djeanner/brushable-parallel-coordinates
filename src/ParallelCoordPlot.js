@@ -540,25 +540,20 @@ class ParallelCoordPlot {
 		if (event.selection) {
 			let selection;
 			if (this.keyTypes[key] === "string") {
-				
 				const [y0, y1] = event.selection;
 				const selectedBands = this.y[key]
 					.domain()
 					.filter(
 						(d) =>
-							this.y[key](d) + this.y[key].bandwidth() > y0 &&
-							this.y[key](d) < y1
+							this.y[key](d) + 0.5 * this.y[key].bandwidth() > y0 &&
+							this.y[key](d) + 0.5 * this.y[key].bandwidth() < y1
 					);
-				console.log("key: ", key, y0, y1, selectedBands);
-				console.log("this.y[key]: ", this.y[key]);
 				//this.brushes.set(key, selectedBands);
-				let maxDiff = Math.max(selectedBands);
-				let minDiff = Math.min(selectedBands) ;
+				let maxDiff = Math.max(...selectedBands);
+				let minDiff = Math.min(...selectedBands);
 				this.brushes.set(key, [minDiff, maxDiff]);
 			} else {
 				selection = event.selection.map(this.y[key].invert, this.y[key]);
-				console.log("selection ", selection);
-
 				this.brushes.set(key, selection);
 			}
 		} else {
