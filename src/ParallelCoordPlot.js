@@ -329,7 +329,6 @@ class ParallelCoordPlot {
 		// Define the line generator with spline interpolation
 		// Assuming this.data is an array of data points structured for the line generator
 
-
 		const line = d3
 			.line()
 			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
@@ -411,14 +410,11 @@ class ParallelCoordPlot {
 					)
 					.range([this.height, 0])
 					.paddingInner(0.1);
-axisGenerator = d3
-    .axisLeft(this.y[key])
-    .tickFormat(d => {
-        const fullLabel = invertedTable[d]; // Get the full label from the inverted table
-        const { trimmedLabel } = this.trimLabel(fullLabel, 15); // Trim the label
-        return trimmedLabel + "..."; // Use the trimmed label for the tick
-    });
-				
+				axisGenerator = d3.axisLeft(this.y[key]).tickFormat((d) => {
+					const fullLabel = invertedTable[d]; // Get the full label from the inverted table
+					const { trimmedLabel } = this.trimLabel(fullLabel, 15); // Trim the label
+					return trimmedLabel + "..."; // Use the trimmed label for the tick
+				});
 			} else {
 				// Setup for non-string fields
 				if (this.keyTypes[key] === "numberLog") {
@@ -451,18 +447,14 @@ axisGenerator = d3
 			// Append axis name on top
 
 			const { trimmedLabel, tooLarge } = this.trimLabel(key, 20); // Use the corrected property name
-			console.log("trimmedLabel", trimmedLabel);
-			console.log("tooLarge", tooLarge);
 			const axisLabel = axisGroup
 				.append("text")
 				.attr("transform", `translate(0, -15)`) // Move it slightly above the axis
 				.attr("fill", "#000") // Text color
 				.attr("text-anchor", "middle") // Center the text
 				.attr("dy", ".71em") // Adjust the distance from the axis
-				.text(trimmedLabel)
-				//.each(function (d) {d3.select(this).append("title").text(key);})
-				;
-				
+				.text(trimmedLabel);
+			//.each(function (d) {d3.select(this).append("title").text(key);})
 			if (tooLarge) axisLabel.append("title").text(key);
 
 			// Setup and append the corresponding brush
@@ -548,6 +540,7 @@ axisGenerator = d3
 		if (event.selection) {
 			let selection;
 			if (this.keyTypes[key] === "string") {
+				
 				const [y0, y1] = event.selection;
 				const selectedBands = this.y[key]
 					.domain()
@@ -556,22 +549,27 @@ axisGenerator = d3
 							this.y[key](d) + this.y[key].bandwidth() > y0 &&
 							this.y[key](d) < y1
 					);
-				this.brushes.set(key, selectedBands);
+				console.log("key: ", key, y0, y1, selectedBands);
+				console.log("this.y[key]: ", this.y[key]);
+				//this.brushes.set(key, selectedBands);
+				let maxDiff = Math.max(selectedBands);
+				let minDiff = Math.min(selectedBands) ;
+				this.brushes.set(key, [minDiff, maxDiff]);
 			} else {
 				selection = event.selection.map(this.y[key].invert, this.y[key]);
+				console.log("selection ", selection);
+
 				this.brushes.set(key, selection);
 			}
 		} else {
 			this.brushes.delete(key);
 		}
 		this.updateLines();
-
 	}
 
 	updateLines() {
 		const svg = d3.select(this.containerSelector).select("svg");
 		const darkFactor = 0.0;
-		console.log("all path", svg.selectAll("path"));
 		svg.selectAll("path.data-line").style("opacity", (d) => {
 			// Assuming d is correctly populated for each path
 			if (!d) {
