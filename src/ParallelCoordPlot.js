@@ -411,10 +411,14 @@ class ParallelCoordPlot {
 					)
 					.range([this.height, 0])
 					.paddingInner(0.1);
-
-				axisGenerator = d3
-					.axisLeft(this.y[key])
-					.tickFormat((d) => invertedTable[d]);
+axisGenerator = d3
+    .axisLeft(this.y[key])
+    .tickFormat(d => {
+        const fullLabel = invertedTable[d]; // Get the full label from the inverted table
+        const { trimmedLabel } = this.trimLabel(fullLabel, 15); // Trim the label
+        return trimmedLabel + "..."; // Use the trimmed label for the tick
+    });
+				
 			} else {
 				// Setup for non-string fields
 				if (this.keyTypes[key] === "numberLog") {
