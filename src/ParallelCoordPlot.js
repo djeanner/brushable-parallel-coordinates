@@ -55,6 +55,35 @@ class ParallelCoordPlot {
 		}
 	}
 
+	shouldUseLogScale(values) {
+		// Convert Set to Array, sort numerically, and remove duplicates
+		const sortedValues = [...values].sort((a, b) => a - b);
+
+		if (sortedValues.some((val) => val <= 0)) {
+			// Contains non-positive values, leaning towards linear
+			return false;
+		}
+
+		let differences = sortedValues
+			.slice(1)
+			.map((value, index) => value - sortedValues[index]);
+		let logDifferences = sortedValues
+			.slice(1)
+			.map(
+				(value, index) => Math.log10(value) - Math.log10(sortedValues[index])
+			);
+
+		let maxDiff = Math.max(...differences);
+		let minDiff = Math.min(...differences);
+		let maxLogDiff = Math.max(...logDifferences);
+		let minLogDiff = Math.min(...logDifferences);
+
+		let ratio = maxDiff / minDiff;
+		let logRatio = maxLogDiff / minLogDiff;
+
+		return logRatio < ratio;
+	}
+
 	transformDataEnhanced(data) {
 		let fieldTypes = {};
 		let dataNumbered = [];
@@ -147,6 +176,17 @@ class ParallelCoordPlot {
 		let keyNoIdenticalValue = Object.keys(keyTypes).filter(
 			(key) => !keysWithNoIdenticalValues.includes(key)
 		);
+
+		keyNoIdenticalValue.forEach((key) => {
+			if (fieldTypes[key].includes("number")) {
+				const useLogScale = this.shouldUseLogScale(allValues[key]);
+				const replaceValuesNoLogScale = true;
+				fieldTypes[key] = useLogScale ? "numberLin" : "numberLog";
+			}
+			keyTypes[key] = fieldTypes[key];
+		});
+		console.log("fieldTypes : ", fieldTypes);
+
 		return {
 			dataNumbered,
 			stringTables,
@@ -287,6 +327,9 @@ class ParallelCoordPlot {
 	drawLines(svg) {
 		const plot = this;
 		// Define the line generator with spline interpolation
+		// Assuming this.data is an array of data points structured for the line generator
+
+
 		const line = d3
 			.line()
 			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
@@ -303,12 +346,11 @@ class ParallelCoordPlot {
 			})
 			.curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
 
-		// Draw lines
 		svg
 			.selectAll("path.line")
 			.data(plot.dataNoIdenticalValue)
 			.join("path")
-			.attr("class", "line")
+			.attr("class", "data-line")
 			.attr("d", (d) =>
 				line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
 			)
@@ -375,12 +417,24 @@ class ParallelCoordPlot {
 					.tickFormat((d) => invertedTable[d]);
 			} else {
 				// Setup for non-string fields
-				this.y[key] = d3
-					.scaleLinear()
-					.domain(d3.extent(this.dataNoIdenticalValue, (d) => +d[key]))
-					.range([this.height, 0]);
+				if (this.keyTypes[key] === "numberLog") {
+					const positiveValues = this.data
+						.filter((d) => d[key] > 0)
+						.map((d) => +d[key]);
+					const domain = d3.extent(positiveValues);
+					this.y[key] = d3.scaleLog().domain(domain).range([this.height, 0]);
+					// axisGenerator = d3.axisLeft(this.y[key]).ticks(5, ".0s");
+					axisGenerator = d3.axisLeft(this.y[key]);
+				} else {
+					this.y[key] = d3
+						.scaleLinear()
+						.domain(d3.extent(this.data, (d) => +d[key]))
+						.range([this.height, 0]);
 
-				axisGenerator = d3.axisLeft(this.y[key]);
+					axisGenerator = d3.axisLeft(this.y[key]);
+				}
+				if (this.keyTypes[key] === "numberLog") {
+				}
 			}
 
 			// Append and position the axis
@@ -391,13 +445,21 @@ class ParallelCoordPlot {
 				.call(axisGenerator);
 
 			// Append axis name on top
-			axisGroup
+
+			const { trimmedLabel, tooLarge } = this.trimLabel(key, 20); // Use the corrected property name
+			console.log("trimmedLabel", trimmedLabel);
+			console.log("tooLarge", tooLarge);
+			const axisLabel = axisGroup
 				.append("text")
 				.attr("transform", `translate(0, -15)`) // Move it slightly above the axis
 				.attr("fill", "#000") // Text color
 				.attr("text-anchor", "middle") // Center the text
 				.attr("dy", ".71em") // Adjust the distance from the axis
-				.text(key);
+				.text(trimmedLabel)
+				//.each(function (d) {d3.select(this).append("title").text(key);})
+				;
+				
+			if (tooLarge) axisLabel.append("title").text(key);
 
 			// Setup and append the corresponding brush
 			const brush = d3
@@ -421,10 +483,21 @@ class ParallelCoordPlot {
 		});
 	}
 
+	trimLabel(label, maxLength = 25) {
+		// Improve by looking at the true size
+		const tooLarge = label.length > maxLength;
+		const trimmedLabel = tooLarge
+			? label.substring(0, maxLength - 3) + "..."
+			: label;
+		return {
+			trimmedLabel, // Corrected from keyStringWithMaxLength to trimmedLabel
+			tooLarge,
+		};
+	}
+
 	setupSelector(svg) {
 		const plot = this;
 
-		// Loop over each key to set up axes and potentially dropdowns
 		this.keyNoIdenticalValue.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
 			let axisGenerator = d3.axisLeft(plot.y[key]);
@@ -440,7 +513,6 @@ class ParallelCoordPlot {
 				.attr("class", `axis-${key}`)
 				.call(axisGenerator);
 
-			// Check if this key is of type string to add a dropdown
 			if (plot.keyTypes[key] === "string") {
 				const dropdown = axisContainer
 					.append("foreignObject")
@@ -459,16 +531,12 @@ class ParallelCoordPlot {
 						plot.updateData(this, key);
 					});
 
-				// Populate dropdown options
 				dropdown.append("option").text("Select").attr("value", "");
 
 				Object.entries(plot.stringTables[key]).forEach(([str, index]) => {
 					dropdown.append("option").text(str).attr("value", index); // Use index or str according to your needs
 				});
 			}
-
-			// Setup brush logic remains unchanged
-			// ...
 		});
 	}
 
@@ -476,7 +544,6 @@ class ParallelCoordPlot {
 		if (event.selection) {
 			let selection;
 			if (this.keyTypes[key] === "string") {
-				// Handle selection for string fields differently
 				const [y0, y1] = event.selection;
 				const selectedBands = this.y[key]
 					.domain()
@@ -487,7 +554,6 @@ class ParallelCoordPlot {
 					);
 				this.brushes.set(key, selectedBands);
 			} else {
-				// Convert pixel selection to data values for numerical/boolean fields
 				selection = event.selection.map(this.y[key].invert, this.y[key]);
 				this.brushes.set(key, selection);
 			}
@@ -495,14 +561,17 @@ class ParallelCoordPlot {
 			this.brushes.delete(key);
 		}
 		this.updateLines();
+
 	}
 
 	updateLines() {
 		const svg = d3.select(this.containerSelector).select("svg");
-		svg.selectAll("path").style("opacity", (d) => {
+		const darkFactor = 0.0;
+		console.log("all path", svg.selectAll("path"));
+		svg.selectAll("path.data-line").style("opacity", (d) => {
 			// Assuming d is correctly populated for each path
 			if (!d) {
-				return 0.1; // Fallback opacity for missing data
+				return darkFactor; // Fallback opacity for missing data
 			}
 			let isVisible = Array.from(this.brushes.entries()).every(
 				([key, [min, max]]) => {
@@ -512,7 +581,7 @@ class ParallelCoordPlot {
 				}
 			);
 
-			return isVisible ? 0.8 : 0.1;
+			return isVisible ? 0.8 : darkFactor;
 		});
 	}
 
