@@ -35,5 +35,5 @@ To view the example visualization, open the index.html file in a web browser. Th
 
 Feel free to fork the repository and submit pull requests with enhancements or fixes. If you encounter any issues or have suggestions for improvement, please open an issue.
 
-git tag -a v0.0.7 -m "Release version 0.0.7"
-  git push origin v0.0.7
+git tag -a v0.1.0 -m "Release version 0.1.0"
+  git push origin v0.1.0
