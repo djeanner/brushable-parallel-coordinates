@@ -586,7 +586,7 @@ class ParallelCoordPlot {
 		const svg = d3.select(this.containerSelector).select("svg");
 		// Target only the paths with the "line" class for updating colors
 		svg
-			.selectAll("path.line") // Use the class to specifically target lines
+			.selectAll("path.data-line") // Use the class to specifically target lines
 			.transition()
 			.duration(200)
 			.attr("stroke", (d) => this.color(d[this.colorAxis]));
