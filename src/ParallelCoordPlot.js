@@ -181,11 +181,11 @@ class ParallelCoordPlot {
 			if (fieldTypes[key].includes("number")) {
 				const useLogScale = this.shouldUseLogScale(allValues[key]);
 				const replaceValuesNoLogScale = true;
-				fieldTypes[key] = useLogScale ? "numberLin" : "numberLog";
+				fieldTypes[key] = useLogScale ? "numberLog" : "numberLin";
 			}
 			keyTypes[key] = fieldTypes[key];
 		});
-		console.log("fieldTypes : ", fieldTypes);
+		// console.log("fieldTypes : ", fieldTypes);
 
 		return {
 			dataNumbered,
