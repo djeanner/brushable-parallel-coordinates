@@ -10,7 +10,7 @@ class ParallelCoordPlot {
 			pointInitialSpaceColumns: 100,
 			pointIncrementSpaceColumns: 100,
 		};
-
+		this.dataFromHtml = dataFromHtml;
 		this.settings = { ...defaults, ...options };
 		this.containerSelector = containerSelector;
 		this.brushes = new Map(); // Initialize the brushes map here
@@ -33,7 +33,7 @@ class ParallelCoordPlot {
 			} else if ("jsonPath" in this.settings) {
 				dataInput = await d3.json(this.settings.jsonPath);
 			} else {
-				dataInput = dataFromHtml;
+				dataInput = this.dataFromHtml;
 			}
 
 			// Correctly destructure the object returned by transformDataEnhanced
@@ -226,6 +226,8 @@ class ParallelCoordPlot {
 		this.createSetColorMapDropdown();
 		this.setColorAxis(this.keyNoIdenticalValue[0]); // Initially set color axis to the first key
 		this.resetButton();
+		this.svgToClipboard();
+		this.svgToImageAndCopyButton();
 		this.init();
 		this.setColorMap(); // Ensure the color map is updated according to the processed data
 	}
@@ -392,6 +394,8 @@ class ParallelCoordPlot {
 			.on("mouseout", function () {
 				plot.tooltip.style("visibility", "hidden");
 			});
+
+		svg.selectAll(".data-line").lower();
 	}
 
 	setupAxes(svg) {
@@ -614,8 +618,84 @@ class ParallelCoordPlot {
 		this.brushes.clear();
 	}
 
+	svgToClipboard() {
+		const controlsContainer = d3
+			.select(this.containerSelector)
+			.select(".controls-container");
+
+		controlsContainer
+			.append("button")
+			.text("Copy SVG ...")
+			.attr("class", "copy-button")
+			.on("click", () => {
+				// Scopes the SVG selection to within the container
+				const svgElement = this.containerSelector
+					? document.querySelector(`${this.containerSelector} svg`)
+					: document.querySelector("svg");
+
+				const serializer = new XMLSerializer();
+				const svgString = serializer.serializeToString(svgElement);
+
+				navigator.clipboard
+					.writeText(svgString)
+					.then(() => {
+						console.log("SVG copied to clipboard");
+					})
+					.catch((err) => {
+						console.error("Error copying SVG:", err);
+					});
+			});
+	}
+	
+
+	svgToImageAndCopyButton() {
+    const controlsContainer = d3
+        .select(this.containerSelector)
+        .select(".controls-container");
+
+    controlsContainer
+        .append("button")
+        .text("Download image as .png")
+        .attr("class", "download-button")
+        .on("click", () => {
+            const svgElement = this.containerSelector
+                ? document.querySelector(`${this.containerSelector} svg`)
+                : document.querySelector("svg");
+            if (!svgElement) {
+                console.error("SVG element not found.");
+                return;
+            }
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+            const svgBlob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+            const DOMURL = self.URL || self.webkitURL || self;
+            const url = DOMURL.createObjectURL(svgBlob);
+
+            const img = new Image();
+            img.onload = function() {
+                const rect = svgElement.getBoundingClientRect();
+                const canvas = document.createElement("canvas");
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, rect.width, rect.height);
+
+                canvas.toBlob(function(blob) {
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = URL.createObjectURL(blob);
+                    downloadLink.download = 'plot.png';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                }, 'image/png');
+            };
+            img.src = url;
+        });
+}
+
+
+
 	resetButton() {
-		this.x;
 		const controlsContainer = d3
 			.select(this.containerSelector)
 			.select(".controls-container");
