@@ -36,7 +36,6 @@ class ParallelCoordPlot {
 				dataInput = this.dataFromHtml;
 			}
 
-			// Correctly destructure the object returned by transformDataEnhanced
 			const {
 				dataNumbered,
 				stringTables,
@@ -226,7 +225,7 @@ class ParallelCoordPlot {
 		this.createSetColorMapDropdown();
 		this.setColorAxis(this.keyNoIdenticalValue[0]); // Initially set color axis to the first key
 		this.resetButton();
-		this.svgToClipboard();
+		this.svgToDownload();
 		this.svgToImageAndCopyButton();
 		this.init();
 		this.setColorMap(); // Ensure the color map is updated according to the processed data
@@ -399,6 +398,9 @@ class ParallelCoordPlot {
 	}
 
 	setupAxes(svg) {
+		const newWidth = this.getPositionForKey(this.keyNoIdenticalValue.length);
+		d3.select(this.containerSelector).select("svg").attr("width", newWidth);
+
 		this.keyNoIdenticalValue.forEach((key, index) => {
 			let axisPosition = this.getPositionForKey(index);
 			let axisGenerator;
@@ -618,32 +620,59 @@ class ParallelCoordPlot {
 		this.brushes.clear();
 	}
 
-	svgToClipboard() {
+	svgToDownload() {
 		const controlsContainer = d3
 			.select(this.containerSelector)
 			.select(".controls-container");
 
 		controlsContainer
 			.append("button")
-			.text("Copy SVG ...")
-			.attr("class", "copy-button")
+			.text("Download SVG")
+			.attr("class", "download-svg-button")
 			.on("click", () => {
-				// Scopes the SVG selection to within the container
 				const svgElement = this.containerSelector
 					? document.querySelector(`${this.containerSelector} svg`)
 					: document.querySelector("svg");
 
-				const serializer = new XMLSerializer();
-				const svgString = serializer.serializeToString(svgElement);
+				// Clone the SVG element
+				const clonedSvgElement = svgElement.cloneNode(true);
 
-				navigator.clipboard
-					.writeText(svgString)
-					.then(() => {
-						console.log("SVG copied to clipboard");
-					})
-					.catch((err) => {
-						console.error("Error copying SVG:", err);
-					});
+				// Remove buttons, menus, or other elements by class or ID from the clone
+				const elementsToRemove = clonedSvgElement.querySelectorAll(
+					".button-class, .menu-class, #button-id, #menu-id"
+				);
+				elementsToRemove.forEach((el) => el.parentNode.removeChild(el));
+				const elements = clonedSvgElement.querySelectorAll(
+					`.${"color-axis-selector-label"}`
+				);
+				elements.forEach((el) => el.parentNode.removeChild(el));
+
+				const elements2 = clonedSvgElement.querySelectorAll(
+					'[class*="dropdown"]'
+				);
+				elements2.forEach((el) => el.parentNode.removeChild(el));
+
+				const serializer = new XMLSerializer();
+				const svgString = serializer.serializeToString(clonedSvgElement);
+				const svgBlob = new Blob([svgString], {
+					type: "image/svg+xml;charset=utf-8",
+				});
+				const DOMURL = self.URL || self.webkitURL || self;
+				const url = DOMURL.createObjectURL(svgBlob);
+
+				// Generate a timestamp for the filename
+				const date = new Date();
+				const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+				const timeString = date.toTimeString().split(" ")[0].replace(/:/g, "-"); // Format: HH-MM-SS
+				const fileName = `plot_${dateString}_${timeString}.svg`; // Note: Change file extension to .svg
+
+				// Create a link and trigger the download
+				const downloadLink = document.createElement("a");
+				downloadLink.href = url;
+				downloadLink.download = fileName;
+				document.body.appendChild(downloadLink);
+				downloadLink.click();
+				document.body.removeChild(downloadLink);
 			});
 	}
 
