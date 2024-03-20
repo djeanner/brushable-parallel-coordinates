@@ -5,6 +5,10 @@ class ParallelCoordPlot {
 			height: 500,
 			colorMap: "Warm", // Example options for the color map
 			margin: { top: 50, right: 10, bottom: 10, left: 0 },
+			showFactor: 0.8, // Factor visibility lines
+			darkFactor: 0.0,
+			pointInitialSpaceColumns: 100,
+			pointIncrementSpaceColumns: 100,
 		};
 
 		this.settings = { ...defaults, ...options };
@@ -275,7 +279,11 @@ class ParallelCoordPlot {
 		this.updateLineColors();
 	}
 
-	getPositionForKey(keyIndex, startPosition = 220, step = 100) {
+	getPositionForKey(
+		keyIndex,
+		startPosition = this.settings.pointInitialSpaceColumns,
+		step = this.settings.pointIncrementSpaceColumns
+	) {
 		return startPosition + keyIndex * step;
 	}
 
@@ -320,8 +328,8 @@ class ParallelCoordPlot {
 			.style("background-color", "white")
 			.style("border", "solid")
 			.style("border-width", "1px")
-			.style("border-radius", "5px")
-			.style("padding", "10px");
+			.style("border-radius", "6px")
+			.style("padding", "6px");
 	}
 
 	drawLines(svg) {
@@ -356,7 +364,7 @@ class ParallelCoordPlot {
 			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
 			.style("fill", "none")
 			.style("stroke-width", "1.5px")
-			.style("opacity", "0.8")
+			.style("opacity", this.settings.showFactor) // Modified later
 			.on("mouseover", function (event, d) {
 				plot.tooltip.style("visibility", "visible").html(() => {
 					let content = "";
@@ -564,7 +572,6 @@ class ParallelCoordPlot {
 
 	updateLines() {
 		const svg = d3.select(this.containerSelector).select("svg");
-		const darkFactor = 0.0;
 		svg.selectAll("path.data-line").style("opacity", (d) => {
 			// Assuming d is correctly populated for each path
 			if (!d) {
@@ -578,7 +585,7 @@ class ParallelCoordPlot {
 				}
 			);
 
-			return isVisible ? 0.8 : darkFactor;
+			return isVisible ? this.settings.showFactor : this.settings.darkFactor;
 		});
 	}
 
@@ -639,7 +646,9 @@ class ParallelCoordPlot {
 		const interpolator = interpolators[this.settings.colorMap];
 
 		if (interpolator) {
-			this.color = d3.scaleSequential(interpolator).domain(colorExtent);
+			if (this.keyTypes[this.colorAxis] === "numberLog")
+				this.color = d3.scaleSequentialLog(interpolator).domain(colorExtent);
+			else this.color = d3.scaleSequential(interpolator).domain(colorExtent);
 		} else {
 			console.error("Invalid color map specified. Falling back to default.");
 			this.color = d3
