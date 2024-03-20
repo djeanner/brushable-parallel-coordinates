@@ -648,7 +648,7 @@ class ParallelCoordPlot {
 	}
 	
 
-	svgToImageAndCopyButton() {
+svgToImageAndCopyButton() {
     const controlsContainer = d3
         .select(this.containerSelector)
         .select(".controls-container");
@@ -678,6 +678,12 @@ class ParallelCoordPlot {
                 canvas.width = rect.width;
                 canvas.height = rect.height;
                 const ctx = canvas.getContext("2d");
+                
+                // Fill the canvas with a white background
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Then draw the image
                 ctx.drawImage(img, 0, 0, rect.width, rect.height);
 
                 canvas.toBlob(function(blob) {
@@ -692,7 +698,6 @@ class ParallelCoordPlot {
             img.src = url;
         });
 }
-
 
 
 	resetButton() {
