@@ -646,59 +646,67 @@ class ParallelCoordPlot {
 					});
 			});
 	}
-	
 
-svgToImageAndCopyButton() {
-    const controlsContainer = d3
-        .select(this.containerSelector)
-        .select(".controls-container");
+	svgToImageAndCopyButton() {
+		const controlsContainer = d3
+			.select(this.containerSelector)
+			.select(".controls-container");
 
-    controlsContainer
-        .append("button")
-        .text("Download image as .png")
-        .attr("class", "download-button")
-        .on("click", () => {
-            const svgElement = this.containerSelector
-                ? document.querySelector(`${this.containerSelector} svg`)
-                : document.querySelector("svg");
-            if (!svgElement) {
-                console.error("SVG element not found.");
-                return;
-            }
-            const serializer = new XMLSerializer();
-            const svgString = serializer.serializeToString(svgElement);
-            const svgBlob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
-            const DOMURL = self.URL || self.webkitURL || self;
-            const url = DOMURL.createObjectURL(svgBlob);
+		controlsContainer
+			.append("button")
+			.text("Download image as .png")
+			.attr("class", "download-button")
+			.on("click", () => {
+				const svgElement = this.containerSelector
+					? document.querySelector(`${this.containerSelector} svg`)
+					: document.querySelector("svg");
+				if (!svgElement) {
+					console.error("SVG element not found.");
+					return;
+				}
+				const serializer = new XMLSerializer();
+				const svgString = serializer.serializeToString(svgElement);
+				const svgBlob = new Blob([svgString], {
+					type: "image/svg+xml;charset=utf-8",
+				});
+				const DOMURL = self.URL || self.webkitURL || self;
+				const url = DOMURL.createObjectURL(svgBlob);
 
-            const img = new Image();
-            img.onload = function() {
-                const rect = svgElement.getBoundingClientRect();
-                const canvas = document.createElement("canvas");
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-                const ctx = canvas.getContext("2d");
-                
-                // Fill the canvas with a white background
-                ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+				const img = new Image();
+				img.onload = function () {
+					const rect = svgElement.getBoundingClientRect();
+					const canvas = document.createElement("canvas");
+					canvas.width = rect.width;
+					canvas.height = rect.height;
+					const ctx = canvas.getContext("2d");
 
-                // Then draw the image
-                ctx.drawImage(img, 0, 0, rect.width, rect.height);
+					// Fill the canvas with a white background
+					ctx.fillStyle = "white";
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                canvas.toBlob(function(blob) {
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = URL.createObjectURL(blob);
-                    downloadLink.download = 'plot.png';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                }, 'image/png');
-            };
-            img.src = url;
-        });
-}
+					// Then draw the image
+					ctx.drawImage(img, 0, 0, rect.width, rect.height);
 
+					canvas.toBlob(function (blob) {
+						const date = new Date();
+						const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+						const timeString = date
+							.toTimeString()
+							.split(" ")[0]
+							.replace(/:/g, "-"); // Format: HH-MM-SS
+						const fileName = `plot_${dateString}_${timeString}.png`;
+
+						const downloadLink = document.createElement("a");
+						downloadLink.href = URL.createObjectURL(blob);
+						downloadLink.download = fileName;
+						document.body.appendChild(downloadLink);
+						downloadLink.click();
+						document.body.removeChild(downloadLink);
+					}, "image/png");
+				};
+				img.src = url;
+			});
+	}
 
 	resetButton() {
 		const controlsContainer = d3
