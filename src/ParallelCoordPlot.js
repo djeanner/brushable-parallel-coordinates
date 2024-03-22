@@ -267,8 +267,6 @@ class ParallelCoordPlot {
 			.select(this.containerSelector)
 			.append("div") // This div will hold controls like dropdowns
 			.attr("class", "controls-container"); // For styling and structure
-
-			
 	}
 
 	createSetColorMapDropdown() {
