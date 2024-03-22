@@ -467,14 +467,12 @@ class ParallelCoordPlot {
 					.range([this.height, 0])
 					.paddingInner(0.1);
 
-				axisGenerator = d3.axisLeft(this.y[key])
-				.tickFormat((d) => {
+				axisGenerator = d3.axisLeft(this.y[key]).tickFormat((d) => {
 					const fullLabel = invertedTable[d];
-					const {trimmedLabel , tooLarge} = this.trimLabel(fullLabel, 15);
+					const { trimmedLabel, tooLarge } = this.trimLabel(fullLabel, 15);
 					return trimmedLabel + "...";
 				});
-				svg.append("g")
-  
+				svg.append("g");
 			} else {
 				// Setup for non-string fields
 				if (this.keyTypes[key] === "numberLog") {
@@ -504,33 +502,33 @@ class ParallelCoordPlot {
 				.attr("transform", `translate(${axisPosition}, 0)`)
 				.call(axisGenerator);
 
-// add titles for full text
-if (this.keyTypes[key] === "string") {
-			const invertedTable = Object.entries(this.stringTables[key]).reduce(
+			// add titles for full text
+			if (this.keyTypes[key] === "string") {
+				const invertedTable = Object.entries(this.stringTables[key]).reduce(
 					(acc, [str, index]) => {
 						acc[index] = str;
 						return acc;
 					},
 					{}
 				);
-				svg.append("g")
-				.attr("class", `axis-${key}`)
-				.attr("transform", `translate(${axisPosition}, 0)`)
-				.call(axisGenerator)
-    .selectAll(".tick text") // Select all text elements for ticks
-    .each(function(d) { // For each tick text, add a title element
-        const fullLabel = invertedTable[d]; // Assuming invertedTable is accessible here
-        d3.select(this)
-            .append("title")
-            .text(fullLabel); // The title text will be shown on hover
-    });
-} else {
-	const axisGroup = svg
-				.append("g")
-				.attr("class", `axis-${key}`)
-				.attr("transform", `translate(${axisPosition}, 0)`)
-				.call(axisGenerator);
-}
+				svg
+					.append("g")
+					.attr("class", `axis-${key}`)
+					.attr("transform", `translate(${axisPosition}, 0)`)
+					.call(axisGenerator)
+					.selectAll(".tick text") // Select all text elements for ticks
+					.each(function (d) {
+						// For each tick text, add a title element
+						const fullLabel = invertedTable[d]; // Assuming invertedTable is accessible here
+						d3.select(this).append("title").text(fullLabel); // The title text will be shown on hover
+					});
+			} else {
+				const axisGroup = svg
+					.append("g")
+					.attr("class", `axis-${key}`)
+					.attr("transform", `translate(${axisPosition}, 0)`)
+					.call(axisGenerator);
+			}
 
 			// Append axis name on top
 
