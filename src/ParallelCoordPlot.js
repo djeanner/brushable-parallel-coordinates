@@ -466,10 +466,12 @@ class ParallelCoordPlot {
 					)
 					.range([this.height, 0])
 					.paddingInner(0.1);
-				axisGenerator = d3.axisLeft(this.y[key]).tickFormat((d) => {
-					const fullLabel = invertedTable[d]; // Get the full label from the inverted table
-					const { trimmedLabel } = this.trimLabel(fullLabel, 15); // Trim the label
-					return trimmedLabel + "..."; // Use the trimmed label for the tick
+
+				axisGenerator = d3.axisLeft(this.y[key])
+				.tickFormat((d) => {
+					const fullLabel = invertedTable[d];
+					const {trimmedLabel , tooLarge} = this.trimLabel(fullLabel, 15);
+					return trimmedLabel + "...";
 				});
 			} else {
 				// Setup for non-string fields
@@ -509,9 +511,11 @@ class ParallelCoordPlot {
 				.attr("fill", "#000") // Text color
 				.attr("text-anchor", "middle") // Center the text
 				.attr("dy", ".71em") // Adjust the distance from the axis
-				.text(trimmedLabel);
-			//.each(function (d) {d3.select(this).append("title").text(key);})
-			if (tooLarge) axisLabel.append("title").text(key);
+				.text(trimmedLabel)
+				.each(function (d) {
+					d3.select(this).append("title").text(key);
+				});
+			//if (tooLarge) axisLabel.append("title").text(key);
 
 			// Setup and append the corresponding brush
 			const brush = d3
