@@ -4,7 +4,7 @@ class ParallelCoordPlot {
 			width: 2400,
 			height: 500,
 			colorMap: "Warm", // Example options for the color map
-			margin: { top: 50, right: 10, bottom: 10, left: 0 },
+			margin: { top: 50, right: 10, bottom: 20, left: 0 },
 			showFactor: 0.8, // Factor visibility lines
 			darkFactor: 0.0,
 			pointInitialSpaceColumns: 100,
@@ -263,10 +263,31 @@ class ParallelCoordPlot {
 	}
 
 	createControlsContainer() {
+		// Append a div for controls inside the parent container
 		this.controlsContainer = d3
 			.select(this.containerSelector)
-			.append("div") // This div will hold controls like dropdowns
+			.append("div")
 			.attr("class", "controls-container"); // For styling and structure
+	}
+	// Assuming this method is part of your class where `this.svg` is your main SVG selection
+	appendCommentToSvg(svg) {
+		let cleanedString = this.rejectedKeys.replace(/<br\s*\/?>/gi, " ");
+		cleanedString = cleanedString.replace(/<[^>]*>/g, "");
+
+		// Calculate the position for the comment. You may adjust these values as needed.
+		const commentX = 100; // Horizontal position of the comment from the left edge of the SVG
+		const commentY = this.height + 15; // Positioning the comment near the bottom of the SVG
+
+		// Append the text element for the comment at the calculated position
+		svg
+			.append("text")
+			.attr("x", commentX)
+			.attr("y", commentY)
+			.attr("class", "comment-label") // You can use this class to style the text if desired
+			.text(cleanedString)
+			.attr("font-family", "sans-serif") // Specify the font family if desired
+			.attr("font-size", "12px") // Specify the font size
+			.attr("fill", "black"); // Specify the text color
 	}
 
 	createSetColorMapDropdown() {
@@ -350,6 +371,8 @@ class ParallelCoordPlot {
 			.style("border-width", "1px")
 			.style("border-radius", "6px")
 			.style("padding", "6px");
+
+		this.appendCommentToSvg(svg);
 	}
 
 	drawLines(svg) {
@@ -656,21 +679,15 @@ class ParallelCoordPlot {
 				// Clone the SVG element
 				const clonedSvgElement = svgElement.cloneNode(true);
 
+				// Adjust the selector here to exclude comment-label from removal
 				// Remove buttons, menus, or other elements by class or ID from the clone
+				// Exclude the 'comment-label' class from the removal
 				const elementsToRemove = clonedSvgElement.querySelectorAll(
-					".button-class, .menu-class, #button-id, #menu-id"
+					".button-class, .menu-class, #button-id, #menu-id, select:not(.comment-label), .color-axis-selector-label, [class*='dropdown-']"
 				);
 				elementsToRemove.forEach((el) => el.parentNode.removeChild(el));
-				const elements = clonedSvgElement.querySelectorAll(
-					`.${"color-axis-selector-label"}`
-				);
-				elements.forEach((el) => el.parentNode.removeChild(el));
 
-				const elements2 = clonedSvgElement.querySelectorAll(
-					'[class*="dropdown"]'
-				);
-				elements2.forEach((el) => el.parentNode.removeChild(el));
-
+				// Proceed with serialization and download logic as before
 				const serializer = new XMLSerializer();
 				const svgString = serializer.serializeToString(clonedSvgElement);
 				const svgBlob = new Blob([svgString], {
@@ -683,7 +700,7 @@ class ParallelCoordPlot {
 				const date = new Date();
 				const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 				const timeString = date.toTimeString().split(" ")[0].replace(/:/g, "-"); // Format: HH-MM-SS
-				const fileName = `plot_${dateString}_${timeString}.svg`; // Note: Change file extension to .svg
+				const fileName = `plot_${dateString}_${timeString}.svg`;
 
 				// Create a link and trigger the download
 				const downloadLink = document.createElement("a");
