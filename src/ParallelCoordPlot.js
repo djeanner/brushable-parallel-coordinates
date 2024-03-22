@@ -1,7 +1,7 @@
 class ParallelCoordPlot {
 	constructor(containerSelector, options = {}, dataFromHtml = {}) {
 		const defaults = {
-			width: 2000,
+			width: 2400,
 			height: 500,
 			colorMap: "Warm", // Example options for the color map
 			margin: { top: 50, right: 10, bottom: 10, left: 0 },
@@ -222,11 +222,14 @@ class ParallelCoordPlot {
 
 	processData() {
 		this.keys = Object.keys(this.dataNoIdenticalValue[0]); // filtering out columns
+		this.createControlsContainer();
 		this.createSetColorMapDropdown();
-		this.setColorAxis(this.keyNoIdenticalValue[0]); // Initially set color axis to the first key
+		this.keyUsedForColor = this.keyNoIdenticalValue[0];
+		this.setColorAxis(this.keyUsedForColor);
 		this.resetButton();
 		this.svgToDownload();
 		this.svgToImageAndCopyButton();
+		this.colorMapMenu();
 		this.init();
 		this.setColorMap(); // Ensure the color map is updated according to the processed data
 	}
@@ -240,29 +243,49 @@ class ParallelCoordPlot {
 		return invertedTable[number] || "Unknown";
 	}
 
-	createSetColorMapDropdown() {
+	colorMapMenu() {
 		const plot = this;
 
-		// Ensure there's a controls container below the SVG
-		const controlsContainer = d3
+		const dropdown = this.controlsContainer
+			.append("select")
+			.attr("class", "color-axis-selector")
+			.on("change", (event) => {
+				this.settings.colorMap = event.target.value;
+				plot.setColorAxis(plot.keyUsedForColor);
+			});
+		dropdown
+			.selectAll("option")
+			.data(["Viridis", "Plasma", "Cividis", "Cool", "Warm", "Inferno"])
+			.enter()
+			.append("option")
+			.text((d) => d)
+			.attr("value", (d) => d);
+	}
+
+	createControlsContainer() {
+		this.controlsContainer = d3
 			.select(this.containerSelector)
 			.append("div") // This div will hold controls like dropdowns
 			.attr("class", "controls-container"); // For styling and structure
 
+			
+	}
+
+	createSetColorMapDropdown() {
 		// Append a label for the dropdown to the controls container
-		controlsContainer
+		this.controlsContainer
 			.append("label")
 			.attr("class", "color-axis-selector-label")
 			.text("Select colors according to ");
 
-		// Append the dropdown to the controls container
-		const dropdown = controlsContainer
+		const dropdown = this.controlsContainer
 			.append("select")
 			.attr("class", "color-axis-selector")
-			.on("change", function () {
-				plot.setColorAxis(this.value);
+			.on("change", (event) => {
+				// Using D3 version 6 or later, the event is the first argument
+				this.keyUsedForColor = event.target.value;
+				this.setColorAxis(this.keyUsedForColor);
 			});
-
 		dropdown
 			.selectAll("option")
 			.data(this.keyNoIdenticalValue)
@@ -274,9 +297,7 @@ class ParallelCoordPlot {
 
 	setColorAxis(newAxis) {
 		this.colorAxis = newAxis;
-		// Now, instead of setting the color scale directly here,
-		// ensure the existing color scale is correctly applied or updated.
-		this.setColorMap(); // This ensures the color scale is updated according to the current settings and data extent.
+		this.setColorMap();
 		this.updateLineColors();
 	}
 
@@ -494,14 +515,14 @@ class ParallelCoordPlot {
 	}
 
 	trimLabel(label, maxLength = 25) {
-		// Improve by looking at the true size
-		const tooLarge = label.length > maxLength;
-		const trimmedLabel = tooLarge
+		// Improve by looking at the true size of the text...
+		const isTrimmed = label.length > maxLength;
+		const trimmedLabel = isTrimmed
 			? label.substring(0, maxLength - 3) + "..."
 			: label;
 		return {
-			trimmedLabel, // Corrected from keyStringWithMaxLength to trimmedLabel
-			tooLarge,
+			trimmedLabel,
+			isTrimmed,
 		};
 	}
 
@@ -526,8 +547,8 @@ class ParallelCoordPlot {
 			if (plot.keyTypes[key] === "string") {
 				const dropdown = axisContainer
 					.append("foreignObject")
-					.attr("width", 100) // Set appropriate width
-					.attr("height", 30) // Set appropriate height
+					.attr("width", 600) // Set appropriate width
+					.attr("height", 25) // Set appropriate height
 					.attr("x", -50) // Adjust X to align, may need tweaking
 					.attr("y", -45) // Adjust Y to position above the axis
 					.append("xhtml:body")
@@ -541,7 +562,7 @@ class ParallelCoordPlot {
 						plot.updateData(this, key);
 					});
 
-				dropdown.append("option").text("Select").attr("value", "");
+				dropdown.append("option").text("Select ...").attr("value", "");
 
 				Object.entries(plot.stringTables[key]).forEach(([str, index]) => {
 					dropdown.append("option").text(str).attr("value", index); // Use index or str according to your needs
