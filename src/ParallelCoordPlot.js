@@ -57,25 +57,25 @@ class ParallelCoordPlot {
 			console.error("Failed to load data:", error);
 		}
 	}
-transmitSelection() {
-	const selectedData = this.dataNoIdenticalValue.filter((d) => {
-		return Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
-			const val = d[key];
-			if (min > max) {
-				return val >= max && val <= min; // Handle inverted selections
-			}
-			return val >= min && val <= max;
+	transmitSelection() {
+		const selectedData = this.dataNoIdenticalValue.filter((d) => {
+			return Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
+				const val = d[key];
+				if (min > max) {
+					return val >= max && val <= min; // Handle inverted selections
+				}
+				return val >= min && val <= max;
+			});
 		});
-	});
-	
-	// Logging the selected data to the console
-	if (selectedData.length > 0) {
-		console.log("Selected lenght:", selectedData.length);
-		console.log("Selected data:", selectedData);
-	} else {
-		console.log("No data selected.");
+
+		// Logging the selected data to the console
+		if (selectedData.length > 0) {
+			console.log("Selected lenght:", selectedData.length);
+			console.log("Selected data:", selectedData);
+		} else {
+			console.log("No data selected.");
+		}
 	}
-}
 
 	shouldUseLogScale(values) {
 		// Convert Set to Array, sort numerically, and remove duplicates
@@ -840,8 +840,6 @@ transmitSelection() {
 	transmitHighlight(data) {
 		console.log("Highlighted data:", data);
 	}
-
-	
 
 	resetButton() {
 		const controlsContainer = d3
