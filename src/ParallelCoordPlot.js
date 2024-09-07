@@ -57,6 +57,25 @@ class ParallelCoordPlot {
 			console.error("Failed to load data:", error);
 		}
 	}
+transmitSelection() {
+	const selectedData = this.dataNoIdenticalValue.filter((d) => {
+		return Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
+			const val = d[key];
+			if (min > max) {
+				return val >= max && val <= min; // Handle inverted selections
+			}
+			return val >= min && val <= max;
+		});
+	});
+	
+	// Logging the selected data to the console
+	if (selectedData.length > 0) {
+		console.log("Selected lenght:", selectedData.length);
+		console.log("Selected data:", selectedData);
+	} else {
+		console.log("No data selected.");
+	}
+}
 
 	shouldUseLogScale(values) {
 		// Convert Set to Array, sort numerically, and remove duplicates
@@ -374,88 +393,81 @@ class ParallelCoordPlot {
 
 		this.appendCommentToSvg(svg);
 	}
-	
+
 	drawLines(svg) {
-    const plot = this;
+		const plot = this;
+		const line = d3
+			.line()
+			.defined((d) => d[1] !== null && !isNaN(d[1]))
+			.x((d) => plot.getPositionForKey(plot.keyNoIdenticalValue.indexOf(d[0])))
+			.y((d) => {
+				if (plot.keyTypes[d[0]] === "string") {
+					return plot.y[d[0]](d[1]) + plot.y[d[0]].bandwidth() / 2;
+				} else {
+					return plot.y[d[0]](d[1]);
+				}
+			})
+			.curve(d3.curveCatmullRom.alpha(1));
 
-    // Define the line generator with spline interpolation
-    const line = d3
-        .line()
-        .defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
-        .x((d) => plot.getPositionForKey(plot.keyNoIdenticalValue.indexOf(d[0]))) // Update x position to match axis
-        .y((d) => {
-            // Adjust y-value computation based on field type
-            if (plot.keyTypes[d[0]] === "string") {
-                // For string fields, use the middle of the band
-                return plot.y[d[0]](d[1]) + plot.y[d[0]].bandwidth() / 2;
-            } else {
-                // For numerical fields, use the linear scale as before
-                return plot.y[d[0]](d[1]);
-            }
-        })
-        .curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
+		svg
+			.selectAll("path.line")
+			.data(plot.dataNoIdenticalValue)
+			.join("path")
+			.attr("class", "data-line")
+			.attr("d", (d) =>
+				line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
+			)
+			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
+			.style("fill", "none")
+			.style("stroke-width", "1.5px")
+			.style("opacity", this.settings.showFactor)
+			.on("mouseover", function (event, d) {
+				const opacity = d3.select(this).style("opacity");
 
-    svg
-        .selectAll("path.line")
-        .data(plot.dataNoIdenticalValue)
-        .join("path")
-        .attr("class", "data-line")
-        .attr("d", (d) =>
-            line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
-        )
-        .attr("stroke", (d) => plot.color(d[plot.colorAxis]))
-        .style("fill", "none")
-        .style("stroke-width", "1.5px")
-        .style("opacity", this.settings.showFactor) // Modified later
-        .on("mouseover", function (event, d) {
-            const opacity = d3.select(this).style("opacity");
+				// Only show tooltip and highlight the line if it's visible (i.e., opacity > darkFactor)
+				if (opacity > plot.settings.darkFactor) {
+					d3.select(this)
+						.transition()
+						.duration(200)
+						.style("stroke-width", "4px")
+						.style("stroke", "black");
 
-            // Only show tooltip and highlight the line if it's visible (i.e., opacity > darkFactor)
-            if (opacity > plot.settings.darkFactor) {
-                // Increase stroke-width and change color on hover
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .style("stroke-width", "4px") // Make the line broader
-                    .style("stroke", "black"); // Optionally change color to black on hover
+					plot.tooltip.style("visibility", "visible").html(() => {
+						let content = "";
+						for (let key in d) {
+							let value =
+								plot.keyTypes[key] === "string"
+									? Object.keys(plot.stringTables[key]).find(
+											(keyStr) => plot.stringTables[key][keyStr] === d[key]
+									  )
+									: d[key];
+							content += `<strong>${key}:</strong> ${value}<br>`;
+						}
+						content += plot.rejectedKeys;
+						return content;
+					});
 
-                plot.tooltip.style("visibility", "visible").html(() => {
-                    let content = "";
-                    for (let key in d) {
-                        // Use stringTables to show original string values in the tooltip
-                        let value =
-                            plot.keyTypes[key] === "string"
-                                ? Object.keys(plot.stringTables[key]).find(
-                                      (keyStr) => plot.stringTables[key][keyStr] === d[key]
-                                  )
-                                : d[key];
-                        content += `<strong>${key}:</strong> ${value}<br>`;
-                    }
-                    content += plot.rejectedKeys;
-                    return content;
-                });
-            }
-        })
-        // Mousemove event to position the tooltip
-        .on("mousemove", function (event) {
-            plot.tooltip
-                .style("top", event.pageY - 10 + "px")
-                .style("left", event.pageX + 10 + "px");
-        })
-        // Mouseout event to revert stroke-width and color
-        .on("mouseout", function () {
-            d3.select(this)
-                .transition()
-                .duration(500)
-                .style("stroke-width", "1.5px") // Reset to original width
-                .style("stroke", (d) => plot.color(d[plot.colorAxis])); // Reset to original color
+					// Transmit the highlighted data
+					plot.transmitHighlight(d);
+				}
+			})
+			.on("mousemove", function (event) {
+				plot.tooltip
+					.style("top", event.pageY - 10 + "px")
+					.style("left", event.pageX + 10 + "px");
+			})
+			.on("mouseout", function () {
+				d3.select(this)
+					.transition()
+					.duration(200)
+					.style("stroke-width", "1.5px")
+					.style("stroke", (d) => plot.color(d[plot.colorAxis]));
 
-            plot.tooltip.style("visibility", "hidden");
-        });
+				plot.tooltip.style("visibility", "hidden");
+			});
 
-    svg.selectAll(".data-line").lower();
-}
-
+		svg.selectAll(".data-line").lower();
+	}
 
 	setupAxes(svg) {
 		const newWidth = this.getPositionForKey(this.keyNoIdenticalValue.length);
@@ -654,7 +666,6 @@ class ParallelCoordPlot {
 							this.y[key](d) + 0.5 * this.y[key].bandwidth() > y0 &&
 							this.y[key](d) + 0.5 * this.y[key].bandwidth() < y1
 					);
-				//this.brushes.set(key, selectedBands);
 				let maxDiff = Math.max(...selectedBands);
 				let minDiff = Math.min(...selectedBands);
 				this.brushes.set(key, [minDiff, maxDiff]);
@@ -666,6 +677,9 @@ class ParallelCoordPlot {
 			this.brushes.delete(key);
 		}
 		this.updateLines();
+
+		// Transmit the selected data points when brushing
+		this.transmitSelection();
 	}
 
 	updateLines() {
@@ -822,6 +836,12 @@ class ParallelCoordPlot {
 				img.src = url;
 			});
 	}
+	// Function to transmit highlighted data point to the console
+	transmitHighlight(data) {
+		console.log("Highlighted data:", data);
+	}
+
+	
 
 	resetButton() {
 		const controlsContainer = d3
