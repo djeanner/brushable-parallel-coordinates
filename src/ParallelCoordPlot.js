@@ -374,76 +374,88 @@ class ParallelCoordPlot {
 
 		this.appendCommentToSvg(svg);
 	}
+	
 	drawLines(svg) {
-		const plot = this;
-		// Define the line generator with spline interpolation
-		const line = d3
-			.line()
-			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
-			.x((d) => plot.getPositionForKey(plot.keyNoIdenticalValue.indexOf(d[0]))) // Update x position to match axis
-			.y((d) => {
-				// Adjust y-value computation based on field type
-				if (plot.keyTypes[d[0]] === "string") {
-					// For string fields, use the middle of the band
-					return plot.y[d[0]](d[1]) + plot.y[d[0]].bandwidth() / 2;
-				} else {
-					// For numerical fields, use the linear scale as before
-					return plot.y[d[0]](d[1]);
-				}
-			})
-			.curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
+    const plot = this;
 
-		svg
-			.selectAll("path.line")
-			.data(plot.dataNoIdenticalValue)
-			.join("path")
-			.attr("class", "data-line")
-			.attr("d", (d) =>
-				line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
-			)
-			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
-			.style("fill", "none")
-			.style("stroke-width", "1.5px")
-			.style("opacity", (d) => {
-				// Determine if the line should be visible or hidden
-				let isVisible = Array.from(plot.brushes.entries()).every(
-					([key, [min, max]]) => {
-						const val = d[key];
-						return min <= val && val <= max;
-					}
-				);
-				return isVisible ? plot.settings.showFactor : plot.settings.darkFactor;
-			})
-			.on("mouseover", function (event, d) {
-				const opacity = d3.select(this).style("opacity");
-				if (opacity == plot.settings.darkFactor) return;
-				plot.tooltip.style("visibility", "visible").html(() => {
-					let content = "";
-					for (let key in d) {
-						// Use stringTables to show original string values in the tooltip
-						let value =
-							plot.keyTypes[key] === "string"
-								? Object.keys(plot.stringTables[key]).find(
-										(keyStr) => plot.stringTables[key][keyStr] === d[key]
-								  )
-								: d[key];
-						content += `<strong>${key}:</strong> ${value}<br>`;
-					}
-					content += plot.rejectedKeys;
-					return content;
-				});
-			})
-			.on("mousemove", function (event) {
-				plot.tooltip
-					.style("top", event.pageY - 10 + "px")
-					.style("left", event.pageX + 10 + "px");
-			})
-			.on("mouseout", function () {
-				plot.tooltip.style("visibility", "hidden");
-			});
+    // Define the line generator with spline interpolation
+    const line = d3
+        .line()
+        .defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
+        .x((d) => plot.getPositionForKey(plot.keyNoIdenticalValue.indexOf(d[0]))) // Update x position to match axis
+        .y((d) => {
+            // Adjust y-value computation based on field type
+            if (plot.keyTypes[d[0]] === "string") {
+                // For string fields, use the middle of the band
+                return plot.y[d[0]](d[1]) + plot.y[d[0]].bandwidth() / 2;
+            } else {
+                // For numerical fields, use the linear scale as before
+                return plot.y[d[0]](d[1]);
+            }
+        })
+        .curve(d3.curveCatmullRom.alpha(1)); // Adjust alpha for different smoothing levels
 
-		svg.selectAll(".data-line").lower(); // Ensure lines are behind other elements
-	}
+    svg
+        .selectAll("path.line")
+        .data(plot.dataNoIdenticalValue)
+        .join("path")
+        .attr("class", "data-line")
+        .attr("d", (d) =>
+            line(plot.keyNoIdenticalValue.map((key) => [key, d[key]]))
+        )
+        .attr("stroke", (d) => plot.color(d[plot.colorAxis]))
+        .style("fill", "none")
+        .style("stroke-width", "1.5px")
+        .style("opacity", this.settings.showFactor) // Modified later
+        .on("mouseover", function (event, d) {
+            const opacity = d3.select(this).style("opacity");
+
+            // Only show tooltip and highlight the line if it's visible (i.e., opacity > darkFactor)
+            if (opacity > plot.settings.darkFactor) {
+                // Increase stroke-width and change color on hover
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .style("stroke-width", "4px") // Make the line broader
+                    .style("stroke", "black"); // Optionally change color to black on hover
+
+                plot.tooltip.style("visibility", "visible").html(() => {
+                    let content = "";
+                    for (let key in d) {
+                        // Use stringTables to show original string values in the tooltip
+                        let value =
+                            plot.keyTypes[key] === "string"
+                                ? Object.keys(plot.stringTables[key]).find(
+                                      (keyStr) => plot.stringTables[key][keyStr] === d[key]
+                                  )
+                                : d[key];
+                        content += `<strong>${key}:</strong> ${value}<br>`;
+                    }
+                    content += plot.rejectedKeys;
+                    return content;
+                });
+            }
+        })
+        // Mousemove event to position the tooltip
+        .on("mousemove", function (event) {
+            plot.tooltip
+                .style("top", event.pageY - 10 + "px")
+                .style("left", event.pageX + 10 + "px");
+        })
+        // Mouseout event to revert stroke-width and color
+        .on("mouseout", function () {
+            d3.select(this)
+                .transition()
+                .duration(500)
+                .style("stroke-width", "1.5px") // Reset to original width
+                .style("stroke", (d) => plot.color(d[plot.colorAxis])); // Reset to original color
+
+            plot.tooltip.style("visibility", "hidden");
+        });
+
+    svg.selectAll(".data-line").lower();
+}
+
 
 	setupAxes(svg) {
 		const newWidth = this.getPositionForKey(this.keyNoIdenticalValue.length);
