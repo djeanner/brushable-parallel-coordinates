@@ -374,12 +374,9 @@ class ParallelCoordPlot {
 
 		this.appendCommentToSvg(svg);
 	}
-
 	drawLines(svg) {
 		const plot = this;
 		// Define the line generator with spline interpolation
-		// Assuming this.data is an array of data points structured for the line generator
-
 		const line = d3
 			.line()
 			.defined((d) => d[1] !== null && !isNaN(d[1])) // Check for both null and NaN
@@ -407,8 +404,19 @@ class ParallelCoordPlot {
 			.attr("stroke", (d) => plot.color(d[plot.colorAxis]))
 			.style("fill", "none")
 			.style("stroke-width", "1.5px")
-			.style("opacity", this.settings.showFactor) // Modified later
+			.style("opacity", (d) => {
+				// Determine if the line should be visible or hidden
+				let isVisible = Array.from(plot.brushes.entries()).every(
+					([key, [min, max]]) => {
+						const val = d[key];
+						return min <= val && val <= max;
+					}
+				);
+				return isVisible ? plot.settings.showFactor : plot.settings.darkFactor;
+			})
 			.on("mouseover", function (event, d) {
+				const opacity = d3.select(this).style("opacity");
+				if (opacity == plot.settings.darkFactor) return;
 				plot.tooltip.style("visibility", "visible").html(() => {
 					let content = "";
 					for (let key in d) {
@@ -425,18 +433,16 @@ class ParallelCoordPlot {
 					return content;
 				});
 			})
-			// Mousemove event to position the tooltip
 			.on("mousemove", function (event) {
 				plot.tooltip
 					.style("top", event.pageY - 10 + "px")
 					.style("left", event.pageX + 10 + "px");
 			})
-			// Mouseout event to hide the tooltip
 			.on("mouseout", function () {
 				plot.tooltip.style("visibility", "hidden");
 			});
 
-		svg.selectAll(".data-line").lower();
+		svg.selectAll(".data-line").lower(); // Ensure lines are behind other elements
 	}
 
 	setupAxes(svg) {
