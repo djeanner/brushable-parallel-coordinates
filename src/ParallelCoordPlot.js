@@ -57,6 +57,36 @@ class ParallelCoordPlot {
 			console.error("Failed to load data:", error);
 		}
 	}
+
+	// Transmit highlighted lines
+	transmitHighlight(data, element) {
+		let content = {};
+
+		// Find the index of the highlighted element within dataNoIdenticalValue
+		const index = this.dataNoIdenticalValue.findIndex((d) => d === data);
+
+		for (let key in data) {
+			let value =
+				this.keyTypes[key] === "string"
+					? Object.keys(this.stringTables[key]).find(
+							(keyStr) => this.stringTables[key][keyStr] === data[key]
+					  )
+					: data[key];
+			content[key] = value;
+			if (this.keyTypes[key] === "string")
+				content[key + "_keyIndex"] = data[key];
+		}
+		const color = d3.select(element).style("stroke");
+
+		var returnedObject = {};
+		returnedObject["data"] = content;
+		returnedObject["color"] = color;
+		returnedObject["index"] = index;
+
+		// Log the content
+		console.log("Highlighted cont:", returnedObject);
+	}
+
 	transmitSelection() {
 		const selectedData = this.dataNoIdenticalValue.filter((d) => {
 			return Array.from(this.brushes.entries()).every(([key, [min, max]]) => {
@@ -68,10 +98,46 @@ class ParallelCoordPlot {
 			});
 		});
 
-		// Logging the selected data to the console
-		if (selectedData.length > 0) {
-			console.log("Selected lenght:", selectedData.length);
-			console.log("Selected data:", selectedData);
+		const selectedObjects = selectedData.map((data) => {
+			let content = {};
+
+			// Find the index of each selected element within dataNoIdenticalValue
+			const index = this.dataNoIdenticalValue.findIndex((d) => d === data);
+
+			for (let key in data) {
+				let value =
+					this.keyTypes[key] === "string"
+						? Object.keys(this.stringTables[key]).find(
+								(keyStr) => this.stringTables[key][keyStr] === data[key]
+						  )
+						: data[key];
+				content[key] = value;
+
+				if (this.keyTypes[key] === "string")
+					content[key + "_keyIndex"] = data[key];
+			}
+
+			// Get the corresponding path element for this data point
+			const lineElement = d3
+				.selectAll("path.data-line")
+				.filter((dLine) => dLine === data)
+				.node();
+
+			// Get the color of the selected line from the SVG element
+			const color = lineElement ? d3.select(lineElement).style("stroke") : null;
+
+			var returnedObject = {};
+			returnedObject["data"] = content;
+			returnedObject["color"] = color; // Now getting the color from the SVG path
+			returnedObject["index"] = index;
+
+			return returnedObject;
+		});
+
+		// Logging the selected data objects to the console
+		if (selectedObjects.length > 0) {
+			console.log("Selected objects:", selectedObjects);
+			console.log("Selected length:", selectedObjects.length);
 		} else {
 			console.log("No data selected.");
 		}
@@ -448,7 +514,7 @@ class ParallelCoordPlot {
 					});
 
 					// Transmit the highlighted data
-					plot.transmitHighlight(d);
+					plot.transmitHighlight(d, this);
 				}
 			})
 			.on("mousemove", function (event) {
@@ -835,10 +901,6 @@ class ParallelCoordPlot {
 				};
 				img.src = url;
 			});
-	}
-	// Function to transmit highlighted data point to the console
-	transmitHighlight(data) {
-		console.log("Highlighted data:", data);
 	}
 
 	resetButton() {
