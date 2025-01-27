@@ -25,15 +25,52 @@ Make sure your CSV file follows the format expected by the script, with column h
 
 ## Visualization Example
 
-To view the example visualization, open the index.html file in a web browser. This file is located at the root of this repository and will render the Parallel Coordinates Plot using the sample data provided. For a live version, you might consider hosting index.html on a web server or using services like GitHub Pages to easily share your visualization online.
+To view the [example](./demo.html) visualization, open the index.html file in a web browser. This file is located at the root of this repository and will render the Parallel Coordinates Plot using the sample data provided. For a live version, you might consider hosting index.html on a web server or using services like GitHub Pages to easily share your visualization online.
 
-[Example](./demo.html)
+We use the jsdelivr.net CDN (Content Delivery Network) service for this [Example](./demoFromServer.html).
 
-[Example reading from server](./demoFromServer.html)
+```zsh
+git tag -a v0.1.0 -m "Release version 0.1.0"
+git push origin v0.1.0
+```
+
+## Usage
+
+Example of implementation with data stored in a file:
+
+```html
+<body>
+    <div id="plot1" class="plot-container"></div>
+    <script src="https://cdn.jsdelivr.net/gh/djeanner/brushable-parallel-coordinates@latest/src/ParallelCoordPlot.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const plot1 = new ParallelCoordPlot("#plot1", { csvPath: "./files/data.csv" });
+        })
+    </script>
+</body>
+```
+
+Example of implementation with in-line data:
+
+```html
+<body>
+    <div id="plot2" class="plot-container"></div>
+    <script src="https://cdn.jsdelivr.net/gh/djeanner/brushable-parallel-coordinates@latest/src/ParallelCoordPlot.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const plot2 = new ParallelCoordPlot("#plot2", {},
+                [
+                    { "name": "AMC Ambassador Brougham", "economy (mpg)": 13, "cylinders": 8, "displacement (cc)": 360, "power (hp)": 175, "weight (lb)": 3821, "0-60 mph (s)": 11, "year": 73 },
+                    { "name": "AMC Ambassador DPL", "economy (mpg)": 15, "cylinders": 8, "displacement (cc)": 390, "power (hp)": 190, "weight (lb)": 3850, "0-60 mph (s)": 8.5, "year": 70 },
+                    { "name": "AMC Ambassador DPL 3", "economy (mpg)": 15.4, "cylinders": 4, "displacement (cc)": 330, "power (hp)": 110, "weight (lb)": 3550, "0-60 mph (s)": 8.5, "year": 72 }
+                ]
+            );
+        })
+    </script>
+</body>
+```
 
 ## Contributing
 
 Feel free to fork the repository and submit pull requests with enhancements or fixes. If you encounter any issues or have suggestions for improvement, please open an issue.
 
-git tag -a v0.1.0 -m "Release version 0.1.0"
-  git push origin v0.1.0
