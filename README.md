@@ -30,8 +30,8 @@ To view the [example](./demo.html) visualization, open the index.html file in a 
 We use the jsdelivr.net CDN (Content Delivery Network) service for this [Example](./demoFromServer.html).
 
 ```zsh
-git tag -a v0.1.0 -m "Release version 0.1.0"
-git push origin v0.1.0
+git tag -a v0.3.0 -m "Release version 0.3.0"
+git push origin v0.3.0
 ```
 
 ## Usage
