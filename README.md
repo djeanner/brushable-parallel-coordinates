@@ -1,4 +1,7 @@
 # Parallel Coordinates Plot
+
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/djeanner/brushable-parallel-coordinates?latest)
+
 ## Overview
 
 This repository contains the code for creating a Parallel Coordinates Plot using D3.js. It is designed to visualize multidimensional data, allowing users to explore patterns and correlations between different variables. The visualization is implemented in HTML and JavaScript, leveraging D3.js for dynamic data binding and interactive capabilities.
