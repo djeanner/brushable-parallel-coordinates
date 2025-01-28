@@ -27,7 +27,7 @@ Make sure your CSV file follows the format expected by the script, with column h
 
 To view the [example](./demo.html) visualization, open the index.html file in a web browser. This file is located at the root of this repository and will render the Parallel Coordinates Plot using the sample data provided. For a live version, you might consider hosting index.html on a web server or using services like GitHub Pages to easily share your visualization online.
 
-We use the jsdelivr.net CDN (Content Delivery Network) service for this [Example with laters version (not always working)](./demoFromServer.html) and [Example with version 0.3.0)](./demoFromServer0.3.0.html).
+We use the jsdelivr.net CDN (Content Delivery Network) service for this [Example with latest version (not always working)](./demoFromServer.html) and [Example with version 0.3.0)](./demoFromServer0.3.0.html).
 
 ```zsh
 git tag -a v0.4.0 -m "Release version 0.4.0"
@@ -74,3 +74,4 @@ Example of implementation with in-line data:
 
 Feel free to fork the repository and submit pull requests with enhancements or fixes. If you encounter any issues or have suggestions for improvement, please open an issue.
 
+https://github.com/djeanner/brushable-parallel-coordinates
